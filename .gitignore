@@ -1,0 +1,312 @@
+# ==========================================
+# ServiceLink Project .gitignore
+# ==========================================
+
+# ==========================================
+# IDEs and Editors
+# ==========================================
+# IntelliJ IDEA
+.idea/
+*.iml
+*.iws
+*.ipr
+out/
+.idea_modules/
+
+# VS Code
+.vscode/
+*.code-workspace
+
+# Eclipse
+.project
+.classpath
+.settings/
+bin/
+
+# NetBeans
+nbproject/
+build/
+nbbuild/
+dist/
+nbdist/
+
+# ==========================================
+# Java / Maven
+# ==========================================
+# Maven
+target/
+pom.xml.tag
+pom.xml.releaseBackup
+pom.xml.versionsBackup
+pom.xml.next
+release.properties
+dependency-reduced-pom.xml
+buildNumber.properties
+.mvn/timing.properties
+.mvn/wrapper/maven-wrapper.jar
+
+# Compiled class files
+*.class
+
+# Log files
+*.log
+
+# Package Files
+*.jar
+*.war
+*.nar
+*.ear
+*.zip
+*.tar.gz
+*.rar
+
+# ==========================================
+# Spring Boot
+# ==========================================
+# Spring Boot DevTools
+.spring-boot-devtools.properties
+
+# Spring Boot application logs
+spring.log
+
+# ==========================================
+# Python (for chatbot later)
+# ==========================================
+# Virtual environments
+venv/
+env/
+ENV/
+.venv
+.pyenv
+
+# Python cache
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+
+# Jupyter Notebook
+.ipynb_checkpoints
+
+# Distribution / packaging
+.Python
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+*.egg-info/
+.installed.cfg
+*.egg
+
+# PyInstaller
+*.manifest
+*.spec
+
+# Unit test / coverage reports
+htmlcov/
+.tox/
+.coverage
+.coverage.*
+.cache
+nosetests.xml
+coverage.xml
+*.cover
+.hypothesis/
+.pytest_cache/
+
+# ==========================================
+# Node.js / React (for frontend later)
+# ==========================================
+# Dependencies
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# Production build
+build/
+dist/
+
+# Testing
+coverage/
+
+# Misc
+.DS_Store
+.env.local
+.env.development.local
+.env.test.local
+.env.production.local
+
+# ==========================================
+# Environment and Configuration
+# ==========================================
+# Environment variables
+.env
+*.env
+.env.*
+!.env.example
+
+# Application properties (if contains secrets)
+# Uncomment if you put passwords in application.yml
+# application-prod.yml
+# application-secrets.yml
+
+# ==========================================
+# Docker
+# ==========================================
+# Docker volumes (local data)
+docker/volumes/
+docker/data/
+
+# Docker environment files
+docker/.env
+
+# ==========================================
+# Database
+# ==========================================
+# Local database files (if using H2 or SQLite for testing)
+*.db
+*.sqlite
+*.sqlite3
+
+# Database dumps
+*.sql.gz
+*.dump
+
+# ==========================================
+# Operating System
+# ==========================================
+# Windows
+Thumbs.db
+ehthumbs.db
+Desktop.ini
+$RECYCLE.BIN/
+*.lnk
+
+# macOS
+.DS_Store
+.AppleDouble
+.LSOverride
+._*
+.Spotlight-V100
+.Trashes
+
+# Linux
+*~
+.nfs*
+
+# ==========================================
+# Logs and Temporary Files
+# ==========================================
+# Log files
+logs/
+*.log
+log/
+
+# Temporary files
+tmp/
+temp/
+*.tmp
+*.bak
+*.swp
+*.swo
+*~.nib
+
+# ==========================================
+# Security and Secrets
+# ==========================================
+# Private keys
+*.pem
+*.key
+*.p12
+*.jks
+*.keystore
+
+# Secrets
+secrets/
+credentials/
+.secrets/
+
+# ==========================================
+# Testing and Coverage
+# ==========================================
+# Test results
+test-results/
+reports/
+
+# Coverage reports
+coverage/
+.nyc_output/
+
+# ==========================================
+# Build Artifacts
+# ==========================================
+# Build directories
+out/
+build/
+target/
+dist/
+
+# ==========================================
+# Documentation
+# ==========================================
+# Generated documentation
+docs/_build/
+site/
+
+# ==========================================
+# Misc
+# ==========================================
+# Archives
+*.7z
+*.dmg
+*.gz
+*.iso
+*.jar
+*.rar
+*.tar
+*.zip
+
+# Certificates
+*.crt
+*.cer
+*.der
+
+# Backup files
+*.backup
+*-backup
+
+# ==========================================
+# Project Specific
+# ==========================================
+# Ignore seed data files if they contain sensitive info
+# seed-data-prod.sql
+
+# Ignore local test scripts
+test-scripts/
+scratch/
+playground/
+```
+
+---
+
+## Special Files to KEEP (Don't Ignore)
+
+Make sure these are **NOT** in `.gitignore`:
+```
+✅ docker-compose.yml
+✅ application.yml (unless it has real passwords)
+✅ pom.xml
+✅ Dockerfile (when you create it)
+✅ README.md
+✅ Flyway migrations (db/migration/*.sql)
+✅ .env.example (template for environment variables)
