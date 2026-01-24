@@ -2,6 +2,7 @@ package com.kiran.servicelink.entity;
 
 import jakarta.persistence.*;
 import jakarta.validation.constraints.*;
+import lombok.*;
 import org.springframework.data.annotation.CreatedDate;
 import org.springframework.data.annotation.LastModifiedDate;
 import org.springframework.data.jpa.domain.support.AuditingEntityListener;
@@ -15,6 +16,13 @@ import java.time.LocalDateTime;
         @Index(name = "idx_providers_created", columnList = "created_at")
 })
 @EntityListeners(AuditingEntityListener.class)
+@Getter
+@Setter
+@NoArgsConstructor
+@AllArgsConstructor
+@Builder
+@ToString
+@EqualsAndHashCode(of = "id")
 public class ServiceProvider {
 
     @Id
@@ -24,6 +32,7 @@ public class ServiceProvider {
     @OneToOne
     @MapsId
     @JoinColumn(name = "user_id")
+    @ToString.Exclude  // Avoid circular reference in toString
     private User user;
 
     // Business Information
@@ -41,15 +50,18 @@ public class ServiceProvider {
     private Integer yearsOfExperience;
 
     @Column(name = "is_certified", nullable = false)
+    @Builder.Default
     private Boolean isCertified = false;
 
     @Column(name = "is_insured", nullable = false)
+    @Builder.Default
     private Boolean isInsured = false;
 
     // Service Area
     @NotNull(message = "Service radius is required")
     @Min(value = 1, message = "Service radius must be at least 1 mile")
     @Column(name = "service_radius_miles", nullable = false)
+    @Builder.Default
     private Integer serviceRadiusMiles = 25;
 
     // Performance Metrics (Denormalized)
@@ -60,6 +72,7 @@ public class ServiceProvider {
 
     @Min(value = 0)
     @Column(name = "total_bookings_completed", nullable = false)
+    @Builder.Default
     private Integer totalBookingsCompleted = 0;
 
     // Photos
@@ -79,140 +92,16 @@ public class ServiceProvider {
     @Column(name = "updated_at")
     private LocalDateTime updatedAt;
 
-    // Constructors
-    public ServiceProvider() {
-    }
-
-    public ServiceProvider(User user, String businessName) {
-        this.user = user;
-        this.businessName = businessName;
-    }
-
-    // Getters and Setters
-    public Integer getId() {
-        return id;
-    }
-
-    public void setId(Integer id) {
-        this.id = id;
-    }
-
-    public User getUser() {
-        return user;
-    }
-
-    public void setUser(User user) {
-        this.user = user;
-    }
-
-    public String getBusinessName() {
-        return businessName;
-    }
-
-    public void setBusinessName(String businessName) {
-        this.businessName = businessName;
-    }
-
-    public String getDescription() {
-        return description;
-    }
-
-    public void setDescription(String description) {
-        this.description = description;
-    }
-
-    public Integer getYearsOfExperience() {
-        return yearsOfExperience;
-    }
-
-    public void setYearsOfExperience(Integer yearsOfExperience) {
-        this.yearsOfExperience = yearsOfExperience;
-    }
-
-    public Boolean getIsCertified() {
-        return isCertified;
-    }
-
-    public void setIsCertified(Boolean isCertified) {
-        this.isCertified = isCertified;
-    }
-
-    public Boolean getIsInsured() {
-        return isInsured;
-    }
-
-    public void setIsInsured(Boolean isInsured) {
-        this.isInsured = isInsured;
-    }
-
-    public Integer getServiceRadiusMiles() {
-        return serviceRadiusMiles;
-    }
-
-    public void setServiceRadiusMiles(Integer serviceRadiusMiles) {
-        this.serviceRadiusMiles = serviceRadiusMiles;
-    }
-
-    public BigDecimal getOverallRating() {
-        return overallRating;
-    }
-
-    public void setOverallRating(BigDecimal overallRating) {
-        this.overallRating = overallRating;
-    }
-
-    public Integer getTotalBookingsCompleted() {
-        return totalBookingsCompleted;
-    }
-
-    public void setTotalBookingsCompleted(Integer totalBookingsCompleted) {
-        this.totalBookingsCompleted = totalBookingsCompleted;
-    }
-
-    public String getProfilePhotoUrl() {
-        return profilePhotoUrl;
-    }
-
-    public void setProfilePhotoUrl(String profilePhotoUrl) {
-        this.profilePhotoUrl = profilePhotoUrl;
-    }
-
-    public String getBusinessPhotos() {
-        return businessPhotos;
-    }
-
-    public void setBusinessPhotos(String businessPhotos) {
-        this.businessPhotos = businessPhotos;
-    }
-
-    public LocalDateTime getCreatedAt() {
-        return createdAt;
-    }
-
-    public void setCreatedAt(LocalDateTime createdAt) {
-        this.createdAt = createdAt;
-    }
-
-    public LocalDateTime getUpdatedAt() {
-        return updatedAt;
-    }
-
-    public void setUpdatedAt(LocalDateTime updatedAt) {
-        this.updatedAt = updatedAt;
-    }
-
-    // Helper method to update booking count
+    // Custom methods
     public void incrementBookingCount() {
         this.totalBookingsCompleted++;
     }
 
-    @Override
-    public String toString() {
-        return "ServiceProvider{" +
-                "id=" + id +
-                ", businessName='" + businessName + '\'' +
-                ", overallRating=" + overallRating +
-                ", totalBookingsCompleted=" + totalBookingsCompleted +
-                '}';
+    public BigDecimal getLatitude() {
+        return user != null ? user.getLatitude() : null;
+    }
+
+    public BigDecimal getLongitude() {
+        return user != null ? user.getLongitude() : null;
     }
 }
