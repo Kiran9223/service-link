@@ -10,6 +10,7 @@ import org.springframework.security.config.annotation.authentication.builders.Au
 import org.springframework.security.config.annotation.method.configuration.EnableMethodSecurity;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
+import org.springframework.security.config.annotation.web.configurers.AbstractHttpConfigurer;
 import org.springframework.security.config.http.SessionCreationPolicy;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
@@ -54,23 +55,49 @@ public class SecurityConfig {
     @Bean
     public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
         http
-                .csrf(csrf -> csrf.disable())
+                // Disable CSRF
+                .csrf(AbstractHttpConfigurer::disable)
+
+                // Exception handling
                 .exceptionHandling(exception ->
                         exception.authenticationEntryPoint(jwtAuthenticationEntryPoint)
                 )
+
+                // Session management (stateless)
                 .sessionManagement(session ->
                         session.sessionCreationPolicy(SessionCreationPolicy.STATELESS)
                 )
+
+                // Authorization rules
                 .authorizeHttpRequests(auth -> auth
-                        .requestMatchers("/api/auth/**").permitAll()
-                        .requestMatchers("/actuator/health").permitAll()
-                        .requestMatchers("/error").permitAll()
+                        // Public endpoints - MUST be first
+                        .requestMatchers(
+                                "/api/auth/**",
+                                "/api/auth/register",
+                                "/api/auth/login",
+                                "/api/auth/register/provider",
+                                "/api/auth/health",
+                                "/actuator/health",
+                                "/error"
+                        ).permitAll()
+
+                        // Swagger/OpenAPI
                         .requestMatchers("/v3/api-docs/**", "/swagger-ui/**", "/swagger-ui.html").permitAll()
+
+                        // Admin-only endpoints
                         .requestMatchers("/api/admin/**").hasRole("ADMIN")
+
+                        // Provider-only endpoints
                         .requestMatchers("/api/providers/**").hasRole("SERVICE_PROVIDER")
+
+                        // User endpoints
                         .requestMatchers("/api/users/**").hasAnyRole("USER", "SERVICE_PROVIDER")
+
+                        // All other endpoints require authentication
                         .anyRequest().authenticated()
                 )
+
+                // Add JWT filter
                 .addFilterBefore(jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter.class);
 
         return http.build();
