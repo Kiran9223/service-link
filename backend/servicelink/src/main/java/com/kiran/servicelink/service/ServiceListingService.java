@@ -88,7 +88,7 @@ public class ServiceListingService {
     public ServiceListingResponseDTO updateService(
             Long serviceId,
             ServiceListingRequestDTO request,
-            Long authenticatedUserId) {
+            Integer authenticatedUserId) {
 
         log.info("Updating service listing: {} by user: {}", serviceId, authenticatedUserId);
 
@@ -136,7 +136,7 @@ public class ServiceListingService {
      * Only the owner can delete
      */
     @Transactional
-    public void deleteService(Long serviceId, Long authenticatedUserId) {
+    public void deleteService(Long serviceId, Integer authenticatedUserId) {
         log.info("Deactivating service listing: {} by user: {}", serviceId, authenticatedUserId);
 
         ServiceListing service = serviceListingRepository.findById(serviceId)
@@ -157,10 +157,10 @@ public class ServiceListingService {
      * Get all services for authenticated provider
      */
     @Transactional(readOnly = true)
-    public List<ServiceListingResponseDTO> getMyServices(Long authenticatedUserId) {
+    public List<ServiceListingResponseDTO> getMyServices(Integer authenticatedUserId) {
         log.debug("Fetching services for provider: {}", authenticatedUserId);
 
-        ServiceProvider provider = getProviderOrThrow(Math.toIntExact(authenticatedUserId));
+        ServiceProvider provider = getProviderOrThrow(authenticatedUserId);
 
         List<ServiceListing> services = serviceListingRepository.findByProvider(provider);
 
