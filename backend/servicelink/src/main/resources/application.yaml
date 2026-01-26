@@ -2,7 +2,7 @@
 server:
   port: 8081
   servlet:
-    context-path: /api
+    context-path: /
   error:
     include-message: always
     include-binding-errors: always
@@ -83,7 +83,7 @@ spring:
 
 # JWT Configuration
 jwt:
-  secret: your-256-bit-secret-key-change-this-in-production-minimum-32-characters-required
+  secret: je22F+vQOKZg24l95gV6Q7hRRGqVRRJo+5t5qaxnpBo=
   expiration: 86400000  # 24 hours in milliseconds
 
 # Logging Configuration
