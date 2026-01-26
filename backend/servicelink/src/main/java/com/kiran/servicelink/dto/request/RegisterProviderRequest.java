@@ -8,7 +8,7 @@ import lombok.experimental.SuperBuilder;
 @EqualsAndHashCode(callSuper = true)
 @NoArgsConstructor
 @AllArgsConstructor
-@SuperBuilder  // Use SuperBuilder for inheritance with @Builder
+@SuperBuilder
 public class RegisterProviderRequest extends RegisterRequest {
 
     @NotBlank(message = "Business name is required for provider registration")
