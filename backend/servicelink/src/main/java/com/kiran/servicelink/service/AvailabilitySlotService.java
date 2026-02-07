@@ -6,10 +6,10 @@ import com.kiran.servicelink.entity.AvailabilitySlot;
 import com.kiran.servicelink.entity.ServiceProvider;
 import com.kiran.servicelink.exception.ForbiddenException;
 import com.kiran.servicelink.exception.ResourceNotFoundException;
-//import com.kiran.servicelink.exception.ValidationException;
+import com.kiran.servicelink.exception.ValidationException;
 import com.kiran.servicelink.repository.AvailabilitySlotRepository;
+
 import com.kiran.servicelink.repository.ServiceProviderRepository;
-import jakarta.validation.ValidationException;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;

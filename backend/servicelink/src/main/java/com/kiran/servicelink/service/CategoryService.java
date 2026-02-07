@@ -5,7 +5,7 @@ import com.kiran.servicelink.entity.ServiceCategory;
 import com.kiran.servicelink.repository.ServiceCategoryRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.apache.kafka.common.errors.ResourceNotFoundException;
+import com.kiran.servicelink.exception.ResourceNotFoundException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 

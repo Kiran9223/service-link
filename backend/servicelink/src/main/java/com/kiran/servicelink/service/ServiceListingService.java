@@ -10,7 +10,7 @@ import com.kiran.servicelink.exception.ForbiddenException;
 import com.kiran.servicelink.exception.ResourceNotFoundException;
 import com.kiran.servicelink.repository.ServiceListingRepository;
 import com.kiran.servicelink.repository.ServiceProviderRepository;
-import jakarta.validation.ValidationException;
+import com.kiran.servicelink.exception.ValidationException;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
