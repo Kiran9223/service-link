@@ -2,7 +2,9 @@ package com.kiran.servicelink.repository;
 
 import com.kiran.servicelink.entity.AvailabilitySlot;
 import com.kiran.servicelink.entity.ServiceProvider;
+import jakarta.persistence.LockModeType;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Lock;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
@@ -10,6 +12,7 @@ import org.springframework.stereotype.Repository;
 import java.time.LocalDate;
 import java.time.LocalTime;
 import java.util.List;
+import java.util.Optional;
 
 @Repository
 public interface AvailabilitySlotRepository extends JpaRepository<AvailabilitySlot, Integer> {
@@ -158,4 +161,13 @@ public interface AvailabilitySlotRepository extends JpaRepository<AvailabilitySl
      * Used for: Automated cleanup
      */
     void deleteBySlotDateBefore(LocalDate date);
+
+    /**
+     * Find slot by ID with pessimistic write lock
+     * CRITICAL: Prevents race conditions during booking
+     */
+    @Lock(LockModeType.PESSIMISTIC_WRITE)
+    @Query("SELECT s FROM AvailabilitySlot s WHERE s.id = :id")
+    Optional<AvailabilitySlot> findByIdWithLock(@Param("id") Integer id);
+
 }
