@@ -11,6 +11,8 @@ import java.time.LocalDateTime;
 /**
  * Represents a provider's availability slot
  * Implements 10-day rolling window - slots can only be created for next 10 days
+ *
+ * UPDATED: Added bidirectional relationship with Booking
  */
 @Entity
 @Table(name = "availability_slots", indexes = {
@@ -29,7 +31,7 @@ public class AvailabilitySlot {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private Integer id;  // Changed from Long to Integer
+    private Integer id;
 
     /**
      * Provider who owns this availability slot
@@ -78,12 +80,23 @@ public class AvailabilitySlot {
     private Boolean isBooked = false;
 
     /**
-     * Reference to the booking that occupies this slot
-     * NULL if not booked
-     * Set when booking is created (Day 5-6 feature)
+     * Bidirectional relationship to booking
+     * This allows us to navigate from slot → booking easily
+     *
+     * mappedBy: Booking entity owns the relationship (has the FK)
+     * cascade: When slot deleted, booking should NOT be deleted (handled by ON DELETE SET NULL in DB)
+     * orphanRemoval: false - booking can exist without slot reference
      */
-    @Column(name = "booking_id")
-    private Integer bookingId;  // Changed from Long to Integer
+    @OneToOne(mappedBy = "slot", fetch = FetchType.LAZY)
+    private Booking booking;
+
+    /**
+     * Denormalized booking ID for quick access without loading relationship
+     * This column is managed by the database FK constraint, not JPA
+     * insertable/updatable = false because Booking side manages this
+     */
+    @Column(name = "booking_id", insertable = false, updatable = false)
+    private Integer bookingId;
 
     /**
      * When this slot was created
@@ -134,5 +147,50 @@ public class AvailabilitySlot {
         LocalDate today = LocalDate.now();
         LocalDate tenDaysFromNow = today.plusDays(10);
         return !slotDate.isBefore(today) && !slotDate.isAfter(tenDaysFromNow);
+    }
+
+    // ========== Booking Management Methods ==========
+
+    /**
+     * Mark this slot as booked
+     * Called when booking is confirmed
+     *
+     * @param booking The booking that reserves this slot
+     */
+    public void markAsBooked(Booking booking) {
+        if (!isBookable()) {
+            throw new IllegalStateException(
+                    "Cannot book slot: " +
+                            (isBooked ? "already booked" : "not available")
+            );
+        }
+        this.isBooked = true;
+        this.booking = booking;
+        // bookingId is managed by database FK, will be set automatically
+    }
+
+    /**
+     * Release this slot (make available again)
+     * Called when booking is cancelled
+     */
+    public void release() {
+        this.isBooked = false;
+        this.booking = null;
+        // bookingId will be set to NULL by database CASCADE
+    }
+
+    /**
+     * Get the booking that owns this slot
+     * Returns null if not booked
+     */
+    public Booking getOwningBooking() {
+        return booking;
+    }
+
+    /**
+     * Check if this slot has an associated booking
+     */
+    public boolean hasBooking() {
+        return booking != null || bookingId != null;
     }
 }

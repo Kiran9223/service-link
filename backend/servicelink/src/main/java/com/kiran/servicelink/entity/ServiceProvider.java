@@ -97,11 +97,11 @@ public class ServiceProvider {
         this.totalBookingsCompleted++;
     }
 
-    public BigDecimal getLatitude() {
+    public Double getLatitude() {
         return user != null ? user.getLatitude() : null;
     }
 
-    public BigDecimal getLongitude() {
+    public Double getLongitude() {
         return user != null ? user.getLongitude() : null;
     }
 }

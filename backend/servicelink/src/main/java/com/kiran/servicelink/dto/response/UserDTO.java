@@ -26,8 +26,8 @@ public class UserDTO {
     private String state;
     private String country;
     private String postalCode;
-    private BigDecimal latitude;
-    private BigDecimal longitude;
+    private Double latitude;
+    private Double longitude;
 
     // Account info
     private Role role;
