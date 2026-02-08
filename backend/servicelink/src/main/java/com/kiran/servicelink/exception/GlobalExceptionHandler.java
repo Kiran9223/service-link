@@ -1,6 +1,7 @@
 package com.kiran.servicelink.exception;
 
 import com.kiran.servicelink.dto.response.ErrorResponse;
+import jakarta.servlet.http.HttpServletRequest;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.http.HttpStatus;
@@ -12,7 +13,14 @@ import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 import org.springframework.web.context.request.WebRequest;
+import com.kiran.servicelink.exception.SlotAlreadyBookedException;
+import com.kiran.servicelink.exception.InvalidBookingStateException;
+import com.kiran.servicelink.exception.BookingNotFoundException;
+import com.kiran.servicelink.exception.BookingConflictException;
+import com.kiran.servicelink.exception.SlotNotAvailableException;
+import com.kiran.servicelink.exception.BookingTimeConstraintException;
 
+import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -228,5 +236,137 @@ public class GlobalExceptionHandler {
         );
 
         return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(errorResponse);
+    }
+
+    /**
+     * Handle SlotAlreadyBookedException
+     * HTTP Status: 409 Conflict
+     */
+    @ExceptionHandler(SlotAlreadyBookedException.class)
+    public ResponseEntity<ErrorResponse> handleSlotAlreadyBooked(
+            SlotAlreadyBookedException ex,
+            HttpServletRequest request) {
+
+        logger.warn("Slot already booked: {}", ex.getMessage());
+
+        ErrorResponse error = ErrorResponse.builder()
+                .timestamp(LocalDateTime.now())
+                .status(HttpStatus.CONFLICT.value())
+                .error("Slot Already Booked")
+                .message(ex.getMessage())
+                .path(request.getRequestURI())
+                .build();
+
+        return ResponseEntity.status(HttpStatus.CONFLICT).body(error);
+    }
+
+    /**
+     * Handle InvalidBookingStateException
+     * HTTP Status: 400 Bad Request
+     */
+    @ExceptionHandler(InvalidBookingStateException.class)
+    public ResponseEntity<ErrorResponse> handleInvalidBookingState(
+            InvalidBookingStateException ex,
+            HttpServletRequest request) {
+
+        logger.warn("Invalid booking state transition: {}", ex.getMessage());
+
+        ErrorResponse error = ErrorResponse.builder()
+                .timestamp(LocalDateTime.now())
+                .status(HttpStatus.BAD_REQUEST.value())
+                .error("Invalid Booking State")
+                .message(ex.getMessage())
+                .path(request.getRequestURI())
+                .build();
+
+        return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(error);
+    }
+
+    /**
+     * Handle BookingNotFoundException
+     * HTTP Status: 404 Not Found
+     */
+    @ExceptionHandler(BookingNotFoundException.class)
+    public ResponseEntity<ErrorResponse> handleBookingNotFound(
+            BookingNotFoundException ex,
+            HttpServletRequest request) {
+
+        logger.warn("Booking not found: {}", ex.getMessage());
+
+        ErrorResponse error = ErrorResponse.builder()
+                .timestamp(LocalDateTime.now())
+                .status(HttpStatus.NOT_FOUND.value())
+                .error("Booking Not Found")
+                .message(ex.getMessage())
+                .path(request.getRequestURI())
+                .build();
+
+        return ResponseEntity.status(HttpStatus.NOT_FOUND).body(error);
+    }
+
+    /**
+     * Handle BookingConflictException
+     * HTTP Status: 409 Conflict
+     */
+    @ExceptionHandler(BookingConflictException.class)
+    public ResponseEntity<ErrorResponse> handleBookingConflict(
+            BookingConflictException ex,
+            HttpServletRequest request) {
+
+        logger.warn("Booking conflict: {}", ex.getMessage());
+
+        ErrorResponse error = ErrorResponse.builder()
+                .timestamp(LocalDateTime.now())
+                .status(HttpStatus.CONFLICT.value())
+                .error("Booking Conflict")
+                .message(ex.getMessage())
+                .path(request.getRequestURI())
+                .build();
+
+        return ResponseEntity.status(HttpStatus.CONFLICT).body(error);
+    }
+
+    /**
+     * Handle SlotNotAvailableException
+     * HTTP Status: 409 Conflict
+     */
+    @ExceptionHandler(SlotNotAvailableException.class)
+    public ResponseEntity<ErrorResponse> handleSlotNotAvailable(
+            SlotNotAvailableException ex,
+            HttpServletRequest request) {
+
+        logger.warn("Slot not available: {}", ex.getMessage());
+
+        ErrorResponse error = ErrorResponse.builder()
+                .timestamp(LocalDateTime.now())
+                .status(HttpStatus.CONFLICT.value())
+                .error("Slot Not Available")
+                .message(ex.getMessage())
+                .path(request.getRequestURI())
+                .build();
+
+        return ResponseEntity.status(HttpStatus.CONFLICT).body(error);
+    }
+
+    /**
+     * Handle BookingTimeConstraintException
+     * HTTP Status: 400 Bad Request
+     */
+    @ExceptionHandler(BookingTimeConstraintException.class)
+    public ResponseEntity<ErrorResponse> handleBookingTimeConstraint(
+            BookingTimeConstraintException ex,
+            HttpServletRequest request) {
+
+        logger.warn("Booking time constraint violation: {}", ex.getMessage());
+
+        ErrorResponse error = ErrorResponse.builder()
+                .timestamp(LocalDateTime.now())
+                .status(HttpStatus.BAD_REQUEST.value())
+                .error("Booking Time Constraint Violation")
+                .message(ex.getMessage())
+                .path(request.getRequestURI())
+                .build();
+
+        return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(error);
     }
 }

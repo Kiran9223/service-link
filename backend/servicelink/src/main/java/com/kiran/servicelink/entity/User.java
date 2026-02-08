@@ -69,11 +69,11 @@ public class User {
     @Column(name = "postal_code", length = 20)
     private String postalCode;
 
-    @Column(precision = 10, scale = 8)
-    private BigDecimal latitude;
+    @Column(name = "latitude")
+    private Double latitude;
 
-    @Column(precision = 11, scale = 8)
-    private BigDecimal longitude;
+    @Column(name = "longitude")
+    private Double longitude;
 
     // Role and Status
     @NotNull

@@ -265,11 +265,6 @@ public interface BookingRepository extends JpaRepository<Booking, Long> {
     long countByProvider(ServiceProvider provider);
 
     /**
-     * Count completed bookings by provider
-     */
-    long countByProviderAndStatus(ServiceProvider provider);
-
-    /**
      * Get total revenue for provider (sum of completed booking prices)
      */
     @Query("SELECT COALESCE(SUM(b.totalPrice), 0) FROM Booking b " +

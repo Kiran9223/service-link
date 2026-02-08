@@ -143,10 +143,10 @@ public class Booking {
     /**
      * Geolocation for service address (for provider routing)
      */
-    @Column(name = "service_latitude", precision = 10, scale = 8)
+    @Column(name = "service_latitude")
     private Double serviceLatitude;
 
-    @Column(name = "service_longitude", precision = 11, scale = 8)
+    @Column(name = "service_longitude")
     private Double serviceLongitude;
 
     // ========== Pricing ==========
