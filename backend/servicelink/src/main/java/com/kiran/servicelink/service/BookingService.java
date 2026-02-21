@@ -45,6 +45,7 @@ public class BookingService {
     private final ServiceListingRepository serviceRepository;
     private final ServiceProviderRepository providerRepository;
     private final UserRepository userRepository;
+    private final BookingEventProducer eventProducer;
 
     // ========== CREATE BOOKING ==========
 
@@ -159,8 +160,14 @@ public class BookingService {
         BookingAudit audit = BookingAudit.forCreation(booking, customer);
         auditRepository.save(audit);
 
-        // 12. TODO: Publish Kafka event for notifications (Day 7-8)
-
+        // 12. Publish Kafka event for notifications
+        try {
+            eventProducer.publishBookingCreated(booking);
+            log.debug("Published BOOKING_CREATED event for booking {}", booking.getId());
+        } catch (Exception e) {
+            log.error("Failed to publish BOOKING_CREATED event for booking {}", booking.getId(), e);
+            // Don't fail the booking - notification is secondary concern
+        }
         log.info("Booking {} created successfully - status: PENDING", booking.getId());
 
         return mapToResponseDTO(booking);
@@ -222,8 +229,14 @@ public class BookingService {
         );
         auditRepository.save(audit);
 
-        // TODO: Publish Kafka event for customer notification
-
+        // Publish Kafka event for customer notification
+        try {
+            eventProducer.publishBookingConfirmed(booking);
+            log.debug("Published BOOKING_CONFIRMED event for booking {}", bookingId);
+        } catch (Exception e) {
+            log.error("Failed to publish BOOKING_CONFIRMED event for booking {}", bookingId, e);
+            // Don't fail the confirmation - notification is secondary
+        }
         return mapToResponseDTO(booking);
     }
 
@@ -279,6 +292,15 @@ public class BookingService {
                 provider
         );
         auditRepository.save(audit);
+
+        // Publish Kafka event for customer notification
+        try {
+            eventProducer.publishBookingStarted(booking);
+            log.debug("Published BOOKING_STARTED event for booking {}", bookingId);
+        } catch (Exception e) {
+            log.error("Failed to publish BOOKING_STARTED event for booking {}", bookingId, e);
+            // Don't fail the service start - notification is secondary
+        }
 
         return mapToResponseDTO(booking);
     }
@@ -347,7 +369,14 @@ public class BookingService {
         );
         auditRepository.save(audit);
 
-        // TODO: Publish Kafka event for review request notification
+        // Publish Kafka event for both parties + trigger review request
+        try {
+            eventProducer.publishBookingCompleted(booking);
+            log.debug("Published BOOKING_COMPLETED event for booking {}", bookingId);
+        } catch (Exception e) {
+            log.error("Failed to publish BOOKING_COMPLETED event for booking {}", bookingId, e);
+            // Don't fail the completion - notification is secondary
+        }
 
         return mapToResponseDTO(booking);
     }
@@ -421,8 +450,24 @@ public class BookingService {
         BookingAudit audit = BookingAudit.forCancellation(booking, user, reason);
         auditRepository.save(audit);
 
-        // TODO: Publish Kafka event for cancellation notification
+        // Publish Kafka event for notification to other party
+        try {
+            // Determine who cancelled (CUSTOMER or PROVIDER)
+            String cancelledByRole;
+            if (booking.getCustomer().getId().equals(user.getId())) {
+                cancelledByRole = "CUSTOMER";
+            } else if (booking.getProvider().getId().equals(user.getId())) {
+                cancelledByRole = "PROVIDER";
+            } else {
+                cancelledByRole = "ADMIN"; // Fallback
+            }
 
+            eventProducer.publishBookingCancelled(booking, cancelledByRole, reason);
+            log.debug("Published BOOKING_CANCELLED event for booking {}", bookingId);
+        } catch (Exception e) {
+            log.error("Failed to publish BOOKING_CANCELLED event for booking {}", bookingId, e);
+            // Don't fail the cancellation - notification is secondary
+        }
         return mapToResponseDTO(booking);
     }
 
