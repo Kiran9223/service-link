@@ -19,6 +19,7 @@ import org.springframework.security.web.authentication.UsernamePasswordAuthentic
 import org.springframework.web.cors.CorsConfiguration;
 import org.springframework.web.cors.CorsConfigurationSource;
 import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
+import org.springframework.http.HttpMethod;
 
 import java.util.Arrays;
 
@@ -75,30 +76,41 @@ public class SecurityConfig {
 
                 // Authorization rules
                 .authorizeHttpRequests(auth -> auth
-                        // Public endpoints - MUST be first
+                        // ── Public auth endpoints ─────────────────────────────────
                         .requestMatchers(
                                 "/api/auth/**",
-                                "/api/auth/register",
-                                "/api/auth/login",
-                                "/api/auth/register/provider",
-                                "/api/auth/health",
                                 "/actuator/health",
                                 "/error"
                         ).permitAll()
 
-                        // Swagger/OpenAPI
-                        .requestMatchers("/v3/api-docs/**", "/swagger-ui/**", "/swagger-ui.html").permitAll()
+                        // ── Swagger ───────────────────────────────────────────────
+                        .requestMatchers(
+                                "/v3/api-docs/**",
+                                "/swagger-ui/**",
+                                "/swagger-ui.html"
+                        ).permitAll()
 
-                        // Admin-only endpoints
+                        // ── Public marketplace endpoints (read-only) ──────────────
+                        .requestMatchers(HttpMethod.GET,
+                                "/api/categories",
+                                "/api/categories/**",
+                                "/api/services/{id}",
+                                "/api/services/category/**",
+                                "/api/services/provider/**",
+                                "/api/services/search",
+                                "/api/availability/provider/**"
+                        ).permitAll()
+
+                        // ── Admin-only ────────────────────────────────────────────
                         .requestMatchers("/api/admin/**").hasRole("ADMIN")
 
-                        // Provider-only endpoints
+                        // ── Provider-only ─────────────────────────────────────────
                         .requestMatchers("/api/providers/**").hasRole("SERVICE_PROVIDER")
 
-                        // User endpoints
+                        // ── Authenticated users ───────────────────────────────────
                         .requestMatchers("/api/users/**").hasAnyRole("USER", "SERVICE_PROVIDER")
 
-                        // All other endpoints require authentication
+                        // ── Everything else requires auth ─────────────────────────
                         .anyRequest().authenticated()
                 )
 
