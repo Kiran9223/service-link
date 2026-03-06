@@ -2,7 +2,7 @@ import { useState, useEffect, useMemo, useCallback } from 'react'
 import { useNavigate, useSearchParams } from 'react-router-dom'
 import {
   Search, SlidersHorizontal, Star, Clock, ChevronDown,
-  X, ArrowRight, AlertCircle, Filter,
+  X, ArrowRight, AlertCircle, Filter, MapPin,
   Wrench, Zap, Snowflake, Sparkles, Leaf, Hammer,
   Paintbrush, TreePine, Home, Lock, Grid3x3, List,
 } from 'lucide-react'
@@ -215,6 +215,22 @@ function sortServices(services: ServiceListing[], sort: SortOption): ServiceList
   }
 }
 
+// ── Geocoding helper (Nominatim — free, no API key) ───────────────────────────
+async function geocodeLocation(query: string): Promise<{ lat: number; lng: number } | null> {
+  try {
+    const encoded = encodeURIComponent(query + ', California, USA')
+    const res = await fetch(
+      `https://nominatim.openstreetmap.org/search?q=${encoded}&format=json&limit=1`,
+      { headers: { 'Accept-Language': 'en' } }
+    )
+    const data = await res.json()
+    if (!data.length) return null
+    return { lat: parseFloat(data[0].lat), lng: parseFloat(data[0].lon) }
+  } catch {
+    return null
+  }
+}
+
 // ── Main Page ─────────────────────────────────────────────────────────────────
 export default function ServicesPage() {
   const navigate      = useNavigate()
@@ -237,6 +253,14 @@ export default function ServicesPage() {
     sort:        (searchParams.get('sort') as SortOption) ?? 'newest',
   })
 
+  // Location filter state
+  const [locationInput,      setLocationInput]      = useState<string>('')
+  const [userLat,            setUserLat]            = useState<number | null>(null)
+  const [userLng,            setUserLng]            = useState<number | null>(null)
+  const [locationDisplay,    setLocationDisplay]    = useState<string>('')
+  const [isGeocodingLocation,setIsGeocodingLocation]= useState(false)
+  const [locationError,      setLocationError]      = useState<string>('')
+
   // ── Load categories once ───────────────────────────────────────────────────
   useEffect(() => {
     serviceApi.getCategories()
@@ -256,19 +280,42 @@ export default function ServicesPage() {
       .catch(() => {}) // categories failure is non-fatal
   }, [])
 
-  // ── Fetch services when category changes (API call) ──────────────────────
+  // ── Fetch services when category or location changes (API call) ─────────
   useEffect(() => {
     const fetchServices = async () => {
       setLoading(true)
       setError(null)
       try {
         let data: ServiceListing[]
+        const hasLocation = userLat !== null && userLng !== null
 
-        if (filters.categoryId) {
-          // Category selected — use category endpoint (search endpoint used below client-side)
+        if (hasLocation && filters.categoryId) {
+          // Location + category — backend search with geospatial params
+          data = await serviceApi.searchServicesNearby({
+            categoryId:  filters.categoryId,
+            pricingType: filters.pricingType ?? undefined,
+            maxPrice:    filters.maxPrice ?? undefined,
+            userLat:     userLat!,
+            userLng:     userLng!,
+            radiusMiles: 25,
+          })
+        } else if (hasLocation && !filters.categoryId) {
+          // Location but no category — search across all categories with location
+          const allCats = categories.length ? categories : await serviceApi.getCategories()
+          const results = await Promise.all(
+            allCats.map(c => serviceApi.searchServicesNearby({
+              categoryId:  c.id,
+              userLat:     userLat!,
+              userLng:     userLng!,
+              radiusMiles: 25,
+            }).catch(() => []))
+          )
+          data = results.flat()
+        } else if (filters.categoryId) {
+          // Category only, no location — fast category endpoint
           data = await serviceApi.getServicesByCategory(filters.categoryId)
         } else {
-          // No category — load all categories and merge
+          // No category, no location — load everything
           const allCats = categories.length ? categories : await serviceApi.getCategories()
           const results = await Promise.all(
             allCats.map(c => serviceApi.getServicesByCategory(c.id).catch(() => []))
@@ -286,7 +333,7 @@ export default function ServicesPage() {
     }
 
     fetchServices()
-  }, [filters.categoryId, categories])
+  }, [filters.categoryId, userLat, userLng, categories])
 
   // ── Sync filters → URL params ──────────────────────────────────────────────
   useEffect(() => {
@@ -334,12 +381,50 @@ export default function ServicesPage() {
     filters.categoryId,
     filters.pricingType,
     filters.maxPrice,
+    locationDisplay || null,
   ].filter(Boolean).length
 
   const clearFilters = useCallback(() => {
     setFilters({ categoryId: null, pricingType: null, maxPrice: null, sort: 'newest' })
     setSearchInput('')
+    setLocationInput('')
+    setUserLat(null)
+    setUserLng(null)
+    setLocationDisplay('')
+    setLocationError('')
   }, [])
+
+  // ── Geocode and apply location filter ─────────────────────────────────────
+  const handleApplyLocation = useCallback(async () => {
+    const trimmed = locationInput.trim()
+
+    // If field is empty, clear location filter
+    if (!trimmed) {
+      setUserLat(null)
+      setUserLng(null)
+      setLocationDisplay('')
+      setLocationError('')
+      return
+    }
+
+    // If already geocoded for this exact input, just re-trigger (coords already in state)
+    if (userLat !== null && userLng !== null && locationDisplay === trimmed) return
+
+    setIsGeocodingLocation(true)
+    setLocationError('')
+
+    const coords = await geocodeLocation(trimmed)
+    setIsGeocodingLocation(false)
+
+    if (!coords) {
+      setLocationError('Location not found. Try a city name or zip code.')
+      return
+    }
+
+    setUserLat(coords.lat)
+    setUserLng(coords.lng)
+    setLocationDisplay(trimmed)
+  }, [locationInput, userLat, userLng, locationDisplay])
 
   const selectedCategory = categories.find(c => c.id === filters.categoryId)
 
@@ -429,7 +514,7 @@ export default function ServicesPage() {
         </div>
 
         {/* Active filter pills */}
-        {(selectedCategory || filters.pricingType || filters.maxPrice) && (
+        {(selectedCategory || filters.pricingType || filters.maxPrice || locationDisplay) && (
           <div className="max-w-7xl mx-auto px-4 pb-2.5 flex items-center gap-2 flex-wrap">
             {selectedCategory && (
               <span className="inline-flex items-center gap-1.5 px-3 py-1 bg-purple-100 text-purple-700 text-xs font-semibold rounded-full">
@@ -452,6 +537,17 @@ export default function ServicesPage() {
                 Max ${filters.maxPrice}
                 <button onClick={() => setFilters(f => ({ ...f, maxPrice: null }))}>
                   <X className="w-3 h-3 hover:text-green-900" />
+                </button>
+              </span>
+            )}
+            {locationDisplay && (
+              <span className="inline-flex items-center gap-1.5 px-3 py-1 bg-amber-100 text-amber-700 text-xs font-semibold rounded-full">
+                <MapPin className="w-3 h-3" /> Near {locationDisplay}
+                <button onClick={() => {
+                  setUserLat(null); setUserLng(null)
+                  setLocationDisplay(''); setLocationInput('')
+                }}>
+                  <X className="w-3 h-3 hover:text-amber-900" />
                 </button>
               </span>
             )}
@@ -560,6 +656,72 @@ export default function ServicesPage() {
               </div>
             </div>
 
+            {/* Location filter */}
+            <div className="card p-4">
+              <p className="text-sm font-bold text-gray-800 mb-3 flex items-center gap-2">
+                <MapPin className="w-4 h-4 text-purple-600" /> Service Location
+              </p>
+              <div className="relative">
+                <input
+                  type="text"
+                  placeholder="City, neighborhood, or zip…"
+                  value={locationInput}
+                  onChange={e => {
+                    setLocationInput(e.target.value)
+                    // Clear geocoded coords whenever user edits the field
+                    if (userLat !== null) {
+                      setUserLat(null)
+                      setUserLng(null)
+                      setLocationDisplay('')
+                    }
+                    setLocationError('')
+                  }}
+                  onKeyDown={e => { if (e.key === 'Enter') handleApplyLocation() }}
+                  className="w-full px-3 py-2.5 text-sm border-2 border-gray-200 focus:border-purple-400 rounded-xl focus:outline-none transition-colors pr-8"
+                />
+                {locationInput && (
+                  <button
+                    onClick={() => {
+                      setLocationInput('')
+                      setUserLat(null); setUserLng(null)
+                      setLocationDisplay(''); setLocationError('')
+                    }}
+                    className="absolute right-2.5 top-1/2 -translate-y-1/2"
+                  >
+                    <X className="w-3.5 h-3.5 text-gray-400 hover:text-gray-600" />
+                  </button>
+                )}
+              </div>
+
+              {/* Geocoded confirmation */}
+              {locationDisplay && (
+                <div className="flex items-center gap-1.5 mt-2">
+                  <span className="w-2 h-2 rounded-full bg-green-500 flex-shrink-0" />
+                  <span className="text-xs text-green-700 font-semibold">{locationDisplay}</span>
+                </div>
+              )}
+
+              {/* Error */}
+              {locationError && (
+                <p className="text-xs text-red-500 mt-1.5">{locationError}</p>
+              )}
+
+              <p className="text-xs text-gray-400 mt-2">
+                Optional — leave blank for all providers
+              </p>
+
+              <button
+                onClick={handleApplyLocation}
+                disabled={isGeocodingLocation || !locationInput.trim()}
+                className="mt-3 w-full py-2 text-sm font-bold bg-purple-600 hover:bg-purple-700 text-white rounded-xl transition-colors disabled:opacity-40 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+              >
+                {isGeocodingLocation
+                  ? <><span className="w-3.5 h-3.5 border-2 border-white/40 border-t-white rounded-full animate-spin" /> Finding…</>
+                  : <><MapPin className="w-3.5 h-3.5" /> Apply Location</>
+                }
+              </button>
+            </div>
+
             {/* Clear filters */}
             {activeFilterCount > 0 && (
               <button onClick={clearFilters} className="w-full py-2.5 text-sm font-semibold text-red-500 hover:text-red-700 border-2 border-red-200 hover:border-red-300 rounded-xl transition-colors">
@@ -589,6 +751,7 @@ export default function ServicesPage() {
                     <span className="font-bold text-gray-900">{displayedServices.length}</span>
                     {' '}service{displayedServices.length !== 1 ? 's' : ''} found
                     {selectedCategory && <> in <span className="text-purple-600 font-semibold">{selectedCategory.name}</span></>}
+                    {locationDisplay && <> near <span className="text-amber-600 font-semibold">{locationDisplay}</span></>}
                     {searchInput && <> matching <span className="text-purple-600 font-semibold">"{searchInput}"</span></>}
                   </>
                 )}

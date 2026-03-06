@@ -1,61 +1,111 @@
 import axiosInstance from './axiosInstance'
-import type { ServiceListing, CategoryResponse, PricingType } from '@/types/service.types'
+import type { ServiceListing, CategoryResponse, PricingType, ServiceListingRequest } from '@/types/service.types'
 
 export const serviceApi = {
-  // GET /api/categories — public, no auth required
   async getCategories(): Promise<CategoryResponse[]> {
     const { data } = await axiosInstance.get<CategoryResponse[]>('/categories')
     return data
   },
 
-  // GET /api/services/category/{categoryId}
   async getServicesByCategory(categoryId: number): Promise<ServiceListing[]> {
     const { data } = await axiosInstance.get<ServiceListing[]>(`/services/category/${categoryId}`)
     return data
   },
 
-  // GET /api/services/search?categoryId=&pricingType=&maxPrice=
-  async searchServices(params: {
-    categoryId: number
-    pricingType?: PricingType
-    maxPrice?: number
-  }): Promise<ServiceListing[]> {
-    const { data } = await axiosInstance.get<ServiceListing[]>('/services/search', { params })
-    return data
-  },
+  // async searchServices(params: {
+  //   categoryId: number
+  //   pricingType?: PricingType
+  //   maxPrice?: number
+  //   userLat?: number
+  //   userLng?: number
+  //   radiusMiles?: number
+  // }): Promise<ServiceListing[]> {
+  //   const { data } = await axiosInstance.get<ServiceListing[]>('/services/search', { params })
+  //   return data
+  // },
 
-  // GET /api/services/{id}
+  async searchServicesNearby(params: {
+  categoryId: number
+  userLat: number
+  userLng: number
+  pricingType?: PricingType
+  maxPrice?: number
+  radiusMiles?: number
+}): Promise<ServiceListing[]> {
+  const { data } = await axiosInstance.get<ServiceListing[]>('/services/search/nearby', { params })
+  return data
+},
+
   async getServiceById(id: number): Promise<ServiceListing> {
     const { data } = await axiosInstance.get<ServiceListing>(`/services/${id}`)
     return data
   },
 
-  // GET /api/services/provider/{providerId}
   async getServicesByProvider(providerId: number): Promise<ServiceListing[]> {
     const { data } = await axiosInstance.get<ServiceListing[]>(`/services/provider/${providerId}`)
     return data
   },
+
+  // ── Provider-authenticated ────────────────────────────────────────────
+  async getMyServices(): Promise<ServiceListing[]> {
+    const { data } = await axiosInstance.get<ServiceListing[]>('/services/my-services')
+    return data
+  },
+
+  async createService(request: ServiceListingRequest): Promise<ServiceListing> {
+    const { data } = await axiosInstance.post<ServiceListing>('/services', request)
+    return data
+  },
+
+  async updateService(id: number, request: ServiceListingRequest): Promise<ServiceListing> {
+    const { data } = await axiosInstance.put<ServiceListing>(`/services/${id}`, request)
+    return data
+  },
+
+  async deleteService(id: number): Promise<void> {
+    await axiosInstance.delete(`/services/${id}`)
+  },
 }
 
 
-// ── Availability API ──────────────────────────────────────────────────────────
+// ── Availability API (public — for customers) ─────────────────────────────────
 export const availabilityApi = {
-  // GET /api/availability/provider/{providerId} — all bookable slots
   async getProviderSlots(providerId: number): Promise<AvailabilitySlot[]> {
     const { data } = await axiosInstance.get<AvailabilitySlot[]>(`/availability/provider/${providerId}`)
     return data
   },
 
-  // GET /api/availability/provider/{providerId}?date=yyyy-MM-dd
   async getProviderSlotsForDate(providerId: number, date: string): Promise<AvailabilitySlot[]> {
-    const { data } = await axiosInstance.get<AvailabilitySlot[]>(`/availability/provider/${providerId}`, {
-      params: { date }
-    })
+    const { data } = await axiosInstance.get<AvailabilitySlot[]>(`/availability/provider/${providerId}`, { params: { date } })
     return data
   },
 }
 
-// ── Availability slot type (inline — avoids circular imports) ─────────────────
+
+// ── Availability management API (provider-authenticated) ──────────────────────
+export const availabilityManagementApi = {
+  async getMySlots(): Promise<AvailabilitySlot[]> {
+    const { data } = await axiosInstance.get<AvailabilitySlot[]>('/availability/my-slots')
+    return data
+  },
+
+  async createSlot(request: { slotDate: string; startTime: string; endTime: string }): Promise<AvailabilitySlot> {
+    const { data } = await axiosInstance.post<AvailabilitySlot>('/availability', request)
+    return data
+  },
+
+  async deleteSlot(id: number): Promise<void> {
+    await axiosInstance.delete(`/availability/${id}`)
+  },
+
+  async toggleSlot(id: number, isAvailable: boolean): Promise<AvailabilitySlot> {
+    const { data } = await axiosInstance.patch<AvailabilitySlot>(`/availability/${id}/toggle`, { isAvailable })
+    return data
+  },
+}
+
+
+// ── Shared slot type ──────────────────────────────────────────────────────────
 export interface AvailabilitySlot {
   id: number
   provider: {

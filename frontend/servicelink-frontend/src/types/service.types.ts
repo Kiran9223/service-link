@@ -51,3 +51,16 @@ export interface ServiceFilters {
   maxPrice: number | null
   sort: SortOption
 }
+
+// ── Matches ServiceListingRequestDTO ──────────────────────────────────────────
+export interface ServiceListingRequest {
+  categoryId: number
+  serviceName: string
+  description?: string
+  pricingType: PricingType
+  hourlyRate?: number
+  fixedPrice?: number
+  minPrice?: number
+  maxPrice?: number
+  estimatedDurationHours?: number
+}

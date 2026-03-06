@@ -13,6 +13,8 @@ const ServiceDetailPage = lazy(() => import('@/features/services/ServiceDetailPa
 const BookingPage   = lazy(() => import('@/features/booking/BookingPage'))
 const CustomerDashboard = lazy(() => import('@/features/dashboard/customer/CustomerDashboard'))
 const ProviderDashboard = lazy(() => import('@/features/dashboard/provider/ProviderDashboard'))
+const ProviderServicesPage = lazy(() => import('@/features/dashboard/provider/ProviderServicesPage'))
+const ProviderAvailabilityPage = lazy(() => import('@/features/dashboard/provider/ProviderAvailabilityPage'))
 const BookingDetailPage = lazy(() => import('@/features/booking/BookingDetailPage'))
 const NotificationsPage = lazy(() => import('@/features/notifications/NotificationsPage'))
 
@@ -54,7 +56,9 @@ export const router = createBrowserRouter([
       {
         element: <ProtectedRoute requiredRole="SERVICE_PROVIDER" />,
         children: [
-          { path: 'provider/dashboard', element: <Wrap><ProviderDashboard /></Wrap> },
+          { path: 'provider/dashboard',    element: <Wrap><ProviderDashboard /></Wrap> },
+          { path: 'provider/services',     element: <Wrap><ProviderServicesPage /></Wrap> },
+          { path: 'provider/availability', element: <Wrap><ProviderAvailabilityPage /></Wrap> },
         ],
       },
 
