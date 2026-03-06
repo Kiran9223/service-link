@@ -1,0 +1,23 @@
+# Web framework
+fastapi==0.135.1
+
+# ASGI server (standard includes uvloop + httptools for performance)
+uvicorn[standard]==0.41.0
+
+# LangChain v1 stack — all aligned on v1 line
+langchain==1.2.10
+langchain-core==1.2.17
+langchain-groq==1.1.2
+
+# Redis client
+redis==7.2.1
+
+# HTTP client (for calling Spring Boot APIs)
+httpx==0.28.1
+
+# Data validation + settings
+pydantic==2.12.5
+pydantic-settings==2.13.1
+
+# Environment variables
+python-dotenv==1.0.1
