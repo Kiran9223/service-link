@@ -290,17 +290,17 @@ export default function ServicesPage() {
         const hasLocation = userLat !== null && userLng !== null
 
         if (hasLocation && filters.categoryId) {
-          // Location + category — backend search with geospatial params
+          // Location + category — new nearby endpoint with all filters
           data = await serviceApi.searchServicesNearby({
             categoryId:  filters.categoryId,
-            pricingType: filters.pricingType ?? undefined,
-            maxPrice:    filters.maxPrice ?? undefined,
             userLat:     userLat!,
             userLng:     userLng!,
             radiusMiles: 25,
+            pricingType: filters.pricingType ?? undefined,
+            maxPrice:    filters.maxPrice ?? undefined,
           })
         } else if (hasLocation && !filters.categoryId) {
-          // Location but no category — search across all categories with location
+          // Location but no category — fan out across all categories with all filters
           const allCats = categories.length ? categories : await serviceApi.getCategories()
           const results = await Promise.all(
             allCats.map(c => serviceApi.searchServicesNearby({
@@ -308,6 +308,8 @@ export default function ServicesPage() {
               userLat:     userLat!,
               userLng:     userLng!,
               radiusMiles: 25,
+              pricingType: filters.pricingType ?? undefined,
+              maxPrice:    filters.maxPrice ?? undefined,
             }).catch(() => []))
           )
           data = results.flat()

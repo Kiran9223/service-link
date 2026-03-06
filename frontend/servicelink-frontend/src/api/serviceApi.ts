@@ -12,29 +12,29 @@ export const serviceApi = {
     return data
   },
 
-  // async searchServices(params: {
-  //   categoryId: number
-  //   pricingType?: PricingType
-  //   maxPrice?: number
-  //   userLat?: number
-  //   userLng?: number
-  //   radiusMiles?: number
-  // }): Promise<ServiceListing[]> {
-  //   const { data } = await axiosInstance.get<ServiceListing[]>('/services/search', { params })
-  //   return data
-  // },
+  async searchServices(params: {
+    categoryId: number
+    pricingType?: PricingType
+    maxPrice?: number
+    userLat?: number
+    userLng?: number
+    radiusMiles?: number
+  }): Promise<ServiceListing[]> {
+    const { data } = await axiosInstance.get<ServiceListing[]>('/services/search', { params })
+    return data
+  },
 
   async searchServicesNearby(params: {
-  categoryId: number
-  userLat: number
-  userLng: number
-  pricingType?: PricingType
-  maxPrice?: number
-  radiusMiles?: number
-}): Promise<ServiceListing[]> {
-  const { data } = await axiosInstance.get<ServiceListing[]>('/services/search/nearby', { params })
-  return data
-},
+    categoryId: number
+    userLat: number
+    userLng: number
+    pricingType?: PricingType
+    maxPrice?: number
+    radiusMiles?: number
+  }): Promise<ServiceListing[]> {
+    const { data } = await axiosInstance.get<ServiceListing[]>('/services/search/nearby', { params })
+    return data
+  },
 
   async getServiceById(id: number): Promise<ServiceListing> {
     const { data } = await axiosInstance.get<ServiceListing>(`/services/${id}`)
