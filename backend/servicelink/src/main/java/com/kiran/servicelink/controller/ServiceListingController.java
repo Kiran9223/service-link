@@ -135,6 +135,24 @@ public class ServiceListingController {
         return ResponseEntity.ok(services);
     }
 
+    @GetMapping("/search/nearby")
+    public ResponseEntity<List<ServiceListingResponseDTO>> searchServicesNearby(
+            @RequestParam Long categoryId,
+            @RequestParam BigDecimal userLat,
+            @RequestParam BigDecimal userLng,
+            @RequestParam(required = false) PricingType pricingType,
+            @RequestParam(required = false) BigDecimal maxPrice,
+            @RequestParam(required = false, defaultValue = "25") Double radiusMiles) {
+
+        log.info("GET /api/services/search/nearby - category: {}, lat: {}, lng: {}, radius: {}",
+                categoryId, userLat, userLng, radiusMiles);
+
+        List<ServiceListingResponseDTO> services =
+                serviceListingService.searchServicesNearby(categoryId, userLat, userLng, radiusMiles, pricingType, maxPrice);
+
+        return ResponseEntity.ok(services);
+    }
+
     // ========== Helper Methods ==========
 
     /**

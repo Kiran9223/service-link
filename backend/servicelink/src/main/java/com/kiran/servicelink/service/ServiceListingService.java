@@ -15,6 +15,8 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import java.util.Collections;
+import java.util.Set;
 
 import java.math.BigDecimal;
 import java.util.List;
@@ -264,6 +266,59 @@ public class ServiceListingService {
         }
 
         return services.stream()
+                .map(this::mapToResponseDTO)
+                .collect(Collectors.toList());
+    }
+
+    @Transactional(readOnly = true)
+    public List<ServiceListingResponseDTO> searchServicesNearby(
+            Long categoryId,
+            BigDecimal userLat,
+            BigDecimal userLng,
+            Double radiusMiles,
+            PricingType pricingType,
+            BigDecimal maxPrice) {
+
+        log.info("Nearby search - category: {}, lat: {}, lng: {}, radius: {}",
+                categoryId, userLat, userLng, radiusMiles);
+
+        // Step 1: Get nearby providers via Haversine
+        List<ServiceProvider> nearbyProviders =
+                serviceProviderRepository.findProvidersNearLocation(userLat, userLng);
+
+        Set<Integer> nearbyProviderIds = nearbyProviders.stream()
+                .map(ServiceProvider::getId)
+                .collect(Collectors.toSet());
+
+        log.info("Found {} providers near location", nearbyProviderIds.size());
+
+        if (nearbyProviderIds.isEmpty()) {
+            return Collections.emptyList();
+        }
+
+        // Step 2: Get services for that category
+        List<ServiceListing> services;
+
+        if (pricingType != null && maxPrice != null) {
+            services = serviceListingRepository
+                    .findByCategoryIdAndPricingTypeAndIsActiveTrue(categoryId, pricingType);
+            services = services.stream()
+                    .filter(s -> isPriceWithinBudget(s, maxPrice))
+                    .collect(Collectors.toList());
+        } else if (maxPrice != null) {
+            services = serviceListingRepository
+                    .searchByCategoryAndMaxPrice(categoryId, maxPrice);
+        } else if (pricingType != null) {
+            services = serviceListingRepository
+                    .findByCategoryIdAndPricingTypeAndIsActiveTrue(categoryId, pricingType);
+        } else {
+            services = serviceListingRepository
+                    .findByCategoryIdAndIsActiveTrueOrderByCreatedAtDesc(categoryId);
+        }
+
+        // Step 3: Filter to nearby providers only
+        return services.stream()
+                .filter(s -> nearbyProviderIds.contains(s.getProvider().getId()))
                 .map(this::mapToResponseDTO)
                 .collect(Collectors.toList());
     }
