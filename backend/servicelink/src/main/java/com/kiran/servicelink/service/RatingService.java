@@ -25,6 +25,7 @@ public class RatingService {
 
     private final RatingRepository ratingRepository;
     private final BookingRepository bookingRepository;
+    private final NotificationService notificationService;
 
     /**
      * Submit a rating for a completed booking.
@@ -64,6 +65,14 @@ public class RatingService {
         rating = ratingRepository.save(rating);
         log.info("Rating {} submitted for booking {} by customer {}",
                 rating.getId(), request.getBookingId(), userId);
+
+        // Notify provider that a review was received
+        notificationService.notifyReviewReceived(
+                booking.getProvider().getUser().getId(),
+                booking.getId(),
+                booking.getCustomer().getName(),
+                request.getStars()
+        );
 
         return mapToDTO(rating);
     }

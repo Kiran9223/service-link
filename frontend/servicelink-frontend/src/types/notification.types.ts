@@ -4,6 +4,7 @@ export type NotificationType =
   | 'BOOKING_STARTED'
   | 'BOOKING_COMPLETED'
   | 'BOOKING_CANCELLED'
+  | 'REVIEW_RECEIVED'
 
 export interface Notification {
   id: number

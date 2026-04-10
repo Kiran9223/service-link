@@ -10,8 +10,8 @@ export const notificationApi = {
   },
 
   async getUnreadCount(): Promise<number> {
-    const { data } = await axiosInstance.get<{ count: number }>('/notifications/unread-count')
-    return data.count
+    const { data } = await axiosInstance.get<{ unreadCount: number }>('/notifications/unread-count')
+    return data.unreadCount
   },
 
   async markAsRead(id: number): Promise<Notification> {

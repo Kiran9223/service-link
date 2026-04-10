@@ -59,6 +59,12 @@ public enum NotificationType {
      */
     REVIEW_REQUEST,
 
+    /**
+     * Sent to provider when a customer submits a review
+     * Recipient: Provider
+     */
+    REVIEW_RECEIVED,
+
     // ========== User Communication ==========
 
     /**
