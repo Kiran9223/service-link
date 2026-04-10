@@ -46,6 +46,7 @@ public class BookingService {
     private final ServiceProviderRepository providerRepository;
     private final UserRepository userRepository;
     private final BookingEventProducer eventProducer;
+    private final RatingRepository ratingRepository;
 
     // ========== CREATE BOOKING ==========
 
@@ -786,7 +787,7 @@ public class BookingService {
                 .isToday(isToday)
                 .isFuture(isFuture)
                 .daysUntilBooking(daysUntil)
-                .hasReview(false)  // TODO: Query ratings table
+                .hasReview(ratingRepository.existsByBookingId(booking.getId()))
                 .build();
     }
 }

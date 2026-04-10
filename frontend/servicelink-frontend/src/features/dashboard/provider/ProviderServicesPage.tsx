@@ -14,15 +14,21 @@ import { formatPrice, getPricingBadge } from '@/utils/priceUtils'
 
 // ── Form schema ───────────────────────────────────────────────────────────────
 const serviceSchema = z.object({
-  categoryId:             z.number().positive('Category is required'),
-  serviceName:            z.string().min(3, 'Name must be at least 3 characters').max(255),
-  description:            z.string().max(5000).optional(),
-  pricingType:            z.enum(['HOURLY', 'FIXED', 'RANGE'] as const),
-  hourlyRate:             z.number().positive('Must be positive').optional().nullable(),
-  fixedPrice:             z.number().positive('Must be positive').optional().nullable(),
-  minPrice:               z.number().positive('Must be positive').optional().nullable(),
-  maxPrice:               z.number().positive('Must be positive').optional().nullable(),
-  estimatedDurationHours: z.number().min(0.1).max(99.9).optional().nullable(),
+  // categoryId:             z.number().positive('Category is required'),
+  categoryId: z.coerce.number().positive('Please select a category'),
+  serviceName: z.string().min(3, 'Name must be at least 3 characters').max(255),
+  description: z.string().max(5000).optional(),
+  pricingType: z.enum(['HOURLY', 'FIXED', 'RANGE'] as const),
+  hourlyRate: z.coerce.number().positive('Must be positive').optional().nullable(),
+  fixedPrice: z.coerce.number().positive('Must be positive').optional().nullable(),
+  minPrice: z.coerce.number().positive('Must be positive').optional().nullable(),
+  maxPrice: z.coerce.number().positive('Must be positive').optional().nullable(),
+  estimatedDurationHours: z.coerce.number().min(0.1).max(99.9).optional().nullable(),
+  // hourlyRate:             z.number().positive('Must be positive').optional().nullable(),
+  // fixedPrice:             z.number().positive('Must be positive').optional().nullable(),
+  // minPrice:               z.number().positive('Must be positive').optional().nullable(),
+  // maxPrice:               z.number().positive('Must be positive').optional().nullable(),
+  // estimatedDurationHours: z.number().min(0.1).max(99.9).optional().nullable(),
 }).superRefine((data, ctx) => {
   if (data.pricingType === 'HOURLY' && !data.hourlyRate) {
     ctx.addIssue({ code: 'custom', path: ['hourlyRate'], message: 'Hourly rate is required' })
@@ -61,19 +67,19 @@ function ServiceFormModal({
   onClose: () => void
 }) {
   const [saving, setSaving] = useState(false)
-  const [error,  setError]  = useState<string | null>(null)
+  const [error, setError] = useState<string | null>(null)
 
   const { register, handleSubmit, watch, control, formState: { errors } } = useForm<ServiceForm>({
     resolver: zodResolver(serviceSchema),
     defaultValues: service ? {
-      categoryId:             service.category.id,
-      serviceName:            service.serviceName,
-      description:            service.description ?? '',
-      pricingType:            service.pricingType,
-      hourlyRate:             service.hourlyRate    ?? null,
-      fixedPrice:             service.fixedPrice    ?? null,
-      minPrice:               service.minPrice      ?? null,
-      maxPrice:               service.maxPrice      ?? null,
+      categoryId: service.category.id,
+      serviceName: service.serviceName,
+      description: service.description ?? '',
+      pricingType: service.pricingType,
+      hourlyRate: service.hourlyRate ?? null,
+      fixedPrice: service.fixedPrice ?? null,
+      minPrice: service.minPrice ?? null,
+      maxPrice: service.maxPrice ?? null,
       estimatedDurationHours: service.estimatedDurationHours ?? null,
     } : {
       pricingType: 'HOURLY',
@@ -87,14 +93,14 @@ function ServiceFormModal({
     setError(null)
     try {
       await onSave({
-        categoryId:             data.categoryId,
-        serviceName:            data.serviceName,
-        description:            data.description,
-        pricingType:            data.pricingType,
-        hourlyRate:             data.hourlyRate   ?? undefined,
-        fixedPrice:             data.fixedPrice   ?? undefined,
-        minPrice:               data.minPrice     ?? undefined,
-        maxPrice:               data.maxPrice     ?? undefined,
+        categoryId: data.categoryId,
+        serviceName: data.serviceName,
+        description: data.description,
+        pricingType: data.pricingType,
+        hourlyRate: data.hourlyRate ?? undefined,
+        fixedPrice: data.fixedPrice ?? undefined,
+        minPrice: data.minPrice ?? undefined,
+        maxPrice: data.maxPrice ?? undefined,
         estimatedDurationHours: data.estimatedDurationHours ?? undefined,
       })
     } catch (err: any) {
@@ -105,8 +111,7 @@ function ServiceFormModal({
   }
 
   const inputCls = (hasError: boolean) =>
-    `w-full px-4 py-3 text-sm border-2 rounded-xl focus:outline-none transition-colors ${
-      hasError ? 'border-red-400 bg-red-50' : 'border-gray-200 focus:border-purple-400'
+    `w-full px-4 py-3 text-sm border-2 rounded-xl focus:outline-none transition-colors ${hasError ? 'border-red-400 bg-red-50' : 'border-gray-200 focus:border-purple-400'
     }`
 
   return (
@@ -141,9 +146,8 @@ function ServiceFormModal({
                   <select
                     {...field}
                     onChange={e => field.onChange(Number(e.target.value))}
-                    className={`w-full pl-4 pr-8 py-3 text-sm border-2 rounded-xl focus:outline-none appearance-none cursor-pointer ${
-                      errors.categoryId ? 'border-red-400 bg-red-50' : 'border-gray-200 focus:border-purple-400'
-                    }`}
+                    className={`w-full pl-4 pr-8 py-3 text-sm border-2 rounded-xl focus:outline-none appearance-none cursor-pointer ${errors.categoryId ? 'border-red-400 bg-red-50' : 'border-gray-200 focus:border-purple-400'
+                      }`}
                   >
                     <option value="">Select a category…</option>
                     {categories.map(c => (
@@ -194,11 +198,10 @@ function ServiceFormModal({
               {(['HOURLY', 'FIXED', 'RANGE'] as PricingType[]).map(pt => (
                 <label
                   key={pt}
-                  className={`flex flex-col items-center gap-1 p-3 border-2 rounded-xl cursor-pointer transition-all ${
-                    pricingType === pt
+                  className={`flex flex-col items-center gap-1 p-3 border-2 rounded-xl cursor-pointer transition-all ${pricingType === pt
                       ? 'border-purple-500 bg-purple-50 text-purple-700'
                       : 'border-gray-200 text-gray-500 hover:border-gray-300'
-                  }`}
+                    }`}
                 >
                   <input type="radio" {...register('pricingType')} value={pt} className="sr-only" />
                   <span className="text-lg">{pt === 'HOURLY' ? '⏱' : pt === 'FIXED' ? '💰' : '📊'}</span>
@@ -418,14 +421,14 @@ function DeleteModal({
 export default function ProviderServicesPage() {
   const navigate = useNavigate()
 
-  const [services,     setServices]     = useState<ServiceListing[]>([])
-  const [categories,   setCategories]   = useState<CategoryResponse[]>([])
-  const [loading,      setLoading]      = useState(true)
-  const [showForm,     setShowForm]     = useState(false)
-  const [editTarget,   setEditTarget]   = useState<ServiceListing | null>(null)
+  const [services, setServices] = useState<ServiceListing[]>([])
+  const [categories, setCategories] = useState<CategoryResponse[]>([])
+  const [loading, setLoading] = useState(true)
+  const [showForm, setShowForm] = useState(false)
+  const [editTarget, setEditTarget] = useState<ServiceListing | null>(null)
   const [deleteTarget, setDeleteTarget] = useState<ServiceListing | null>(null)
-  const [deleting,     setDeleting]     = useState(false)
-  const [successMsg,   setSuccessMsg]   = useState<string | null>(null)
+  const [deleting, setDeleting] = useState(false)
+  const [successMsg, setSuccessMsg] = useState<string | null>(null)
 
   useEffect(() => {
     Promise.all([
@@ -435,7 +438,7 @@ export default function ProviderServicesPage() {
       setServices(svcs)
       setCategories(cats)
     }).catch(console.error)
-    .finally(() => setLoading(false))
+      .finally(() => setLoading(false))
   }, [])
 
   const showSuccess = (msg: string) => {
@@ -474,7 +477,7 @@ export default function ProviderServicesPage() {
     }
   }
 
-  const activeServices   = services.filter(s => s.isActive)
+  const activeServices = services.filter(s => s.isActive)
   const inactiveServices = services.filter(s => !s.isActive)
 
   return (

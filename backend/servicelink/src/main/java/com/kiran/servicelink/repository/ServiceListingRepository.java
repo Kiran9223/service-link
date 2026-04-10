@@ -65,4 +65,21 @@ public interface ServiceListingRepository extends JpaRepository<ServiceListing, 
      * Used for: Provider stats, "Offers 12 services"
      */
     long countByProviderAndIsActiveTrue(ServiceProvider provider);
+
+    /**
+     * Get distinct cities where active providers offer services.
+     * Optionally filtered by category name.
+     * Used for: chatbot "what areas do you cover?" queries
+     */
+    @Query(value =
+        "SELECT DISTINCT u.city FROM users u " +
+        "JOIN service_providers sp ON sp.user_id = u.id " +
+        "JOIN services s ON s.provider_id = sp.user_id " +
+        "JOIN service_categories sc ON s.category_id = sc.id " +
+        "WHERE s.is_active = true " +
+        "AND u.city IS NOT NULL " +
+        "AND (:category IS NULL OR LOWER(sc.name) = LOWER(:category)) " +
+        "ORDER BY u.city",
+        nativeQuery = true)
+    List<String> findDistinctCities(@Param("category") String category);
 }

@@ -9,7 +9,7 @@ const storedToken = tokenUtils.getToken()
 const initialState: AuthState = {
   token: storedToken,
   user: tokenUtils.getUser(),
-  provider: null,
+  provider: tokenUtils.getProvider(),
   isAuthenticated: !!storedToken && !tokenUtils.isExpired(storedToken),
   isLoading: false,
   error: null,
@@ -22,9 +22,10 @@ export const login = createAsyncThunk(
   async (credentials: LoginRequest, { rejectWithValue }) => {
     try {
       const response = await authApi.login(credentials)
-      // Backend returns "accessToken" — store it
       tokenUtils.setToken(response.accessToken)
       tokenUtils.setUser(response.user)
+      if (response.provider) tokenUtils.setProvider(response.provider)
+      else tokenUtils.removeProvider()
       return response
     } catch (err: unknown) {
       const error = err as { response?: { data?: { message?: string } } }
@@ -55,6 +56,7 @@ export const registerProvider = createAsyncThunk(
       const response = await authApi.registerProvider(payload)
       tokenUtils.setToken(response.accessToken)
       tokenUtils.setUser(response.user)
+      if (response.provider) tokenUtils.setProvider(response.provider)
       return response
     } catch (err: unknown) {
       const error = err as { response?: { data?: { message?: string } } }

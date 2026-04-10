@@ -61,7 +61,7 @@ public class AvailabilitySlotController {
     @PutMapping("/{id}")
     @PreAuthorize("hasRole('SERVICE_PROVIDER')")
     public ResponseEntity<AvailabilitySlotResponseDTO> updateSlot(
-            @PathVariable Integer id,
+            @PathVariable("id") Integer id,
             @Valid @RequestBody CreateAvailabilitySlotRequestDTO request,
             HttpServletRequest httpRequest) {
 
@@ -81,7 +81,7 @@ public class AvailabilitySlotController {
     @PatchMapping("/{id}/toggle")
     @PreAuthorize("hasRole('SERVICE_PROVIDER')")
     public ResponseEntity<AvailabilitySlotResponseDTO> toggleAvailability(
-            @PathVariable Integer id,
+            @PathVariable("id") Integer id,
             @RequestBody ToggleAvailabilityRequest request,
             HttpServletRequest httpRequest) {
 
@@ -102,7 +102,7 @@ public class AvailabilitySlotController {
     @DeleteMapping("/{id}")
     @PreAuthorize("hasRole('SERVICE_PROVIDER')")
     public ResponseEntity<Void> deleteSlot(
-            @PathVariable Integer id,
+            @PathVariable("id") Integer id,
             HttpServletRequest httpRequest) {
 
         log.info("DELETE /api/availability/{} - Deleting availability slot", id);
@@ -123,7 +123,7 @@ public class AvailabilitySlotController {
     @GetMapping("/my-slots")
     @PreAuthorize("hasRole('SERVICE_PROVIDER')")
     public ResponseEntity<List<AvailabilitySlotResponseDTO>> getMySlots(
-            @RequestParam(required = false)
+            @RequestParam(value = "date", required = false)
             @DateTimeFormat(iso = DateTimeFormat.ISO.DATE)
             LocalDate date,
             HttpServletRequest httpRequest) {
@@ -156,8 +156,8 @@ public class AvailabilitySlotController {
      */
     @GetMapping("/provider/{providerId}")
     public ResponseEntity<List<AvailabilitySlotResponseDTO>> getProviderAvailability(
-            @PathVariable Integer providerId,
-            @RequestParam(required = false)
+            @PathVariable("providerId") Integer providerId,
+            @RequestParam(value = "date", required = false)
             @DateTimeFormat(iso = DateTimeFormat.ISO.DATE)
             LocalDate date) {
 

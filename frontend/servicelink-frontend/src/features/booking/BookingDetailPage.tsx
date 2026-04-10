@@ -4,12 +4,16 @@ import {
   ArrowLeft, Calendar, MapPin, User, Building2,
   CheckCircle, XCircle, Play, Loader2, AlertCircle,
   Phone, Mail, Star, DollarSign, FileText, Info,
-  ClipboardList, X,
+  ClipboardList, X, MessageSquare,
 } from 'lucide-react'
 import { bookingApi } from '@/api/bookingApi'
+import { ratingApi } from '@/api/ratingApi'
 import type { BookingResponse, BookingStatus } from '@/types/booking.types'
+import type { RatingResponse } from '@/types/rating.types'
 import { useAuth } from '@/hooks/useAuth'
 import { BOOKING_STATUS_CONFIG } from '@/config/constants'
+import StarRating from '@/components/rating/StarRating'
+import ReviewForm from '@/components/rating/ReviewForm'
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
 function formatTime(t: string) {
@@ -268,11 +272,18 @@ export default function BookingDetailPage() {
   const [actionError,  setActionError]  = useState<string | null>(null)
   const [showCancel,   setShowCancel]   = useState(false)
   const [cancelling,   setCancelling]   = useState(false)
+  const [rating,       setRating]       = useState<RatingResponse | null | undefined>(undefined)
 
   useEffect(() => {
     if (!id) return
     bookingApi.getBookingById(Number(id))
-      .then(setBooking)
+      .then(b => {
+        setBooking(b)
+        // Fetch existing rating if booking is completed
+        if (b.status === 'COMPLETED') {
+          ratingApi.getRatingByBooking(b.id).then(setRating)
+        }
+      })
       .catch(() => setError('Booking not found or you don\'t have access.'))
       .finally(() => setLoading(false))
   }, [id])
@@ -514,6 +525,47 @@ export default function BookingDetailPage() {
             >
               <XCircle className="w-4 h-4" /> Cancel Booking
             </button>
+          )}
+
+          {/* ── Review section (customer view, completed bookings only) ── */}
+          {!isProvider && booking.status === 'COMPLETED' && (
+            <Section title="Your Review" icon={MessageSquare}>
+              {/* Rating already submitted */}
+              {rating != null ? (
+                <div className="space-y-3">
+                  <div className="flex items-center gap-3">
+                    <StarRating value={rating.stars} readOnly size="md" />
+                    <span className="text-sm text-gray-500">
+                      {['', 'Poor', 'Fair', 'Good', 'Very Good', 'Excellent'][rating.stars]}
+                    </span>
+                  </div>
+                  {rating.reviewText && (
+                    <p className="text-sm text-gray-700 bg-gray-50 rounded-xl px-4 py-3 italic">
+                      "{rating.reviewText}"
+                    </p>
+                  )}
+                  <p className="text-xs text-gray-400">
+                    Submitted on {new Date(rating.createdAt).toLocaleDateString('en-US', {
+                      month: 'long', day: 'numeric', year: 'numeric',
+                    })}
+                  </p>
+                </div>
+              ) : rating === null ? (
+                /* No review yet — show form */
+                <ReviewForm
+                  bookingId={booking.id}
+                  onSuccess={r => {
+                    setRating(r)
+                    setBooking(prev => prev ? { ...prev, hasReview: true } : prev)
+                  }}
+                />
+              ) : (
+                /* Still loading rating */
+                <div className="flex justify-center py-4">
+                  <Loader2 className="w-5 h-5 text-purple-400 animate-spin" />
+                </div>
+              )}
+            </Section>
           )}
 
         </div>

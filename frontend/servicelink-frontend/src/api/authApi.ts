@@ -16,4 +16,13 @@ export const authApi = {
     const { data } = await axiosInstance.post<AuthResponse>('/auth/register/provider', payload)
     return data
   },
+
+  async forgotPassword(email: string): Promise<{ resetToken: string; expiresIn: number; message: string }> {
+    const { data } = await axiosInstance.post('/auth/forgot-password', { email })
+    return data
+  },
+
+  async resetPassword(token: string, newPassword: string): Promise<void> {
+    await axiosInstance.post('/auth/reset-password', { token, newPassword })
+  },
 }

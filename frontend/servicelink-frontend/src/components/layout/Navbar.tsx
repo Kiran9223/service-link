@@ -1,5 +1,5 @@
 import { Link, useNavigate } from 'react-router-dom'
-import { Zap, Bell, Menu, X, Tag, CalendarDays } from 'lucide-react'
+import { Zap, Bell, Menu, X, Tag, CalendarDays, BarChart2 } from 'lucide-react'
 import { useState } from 'react'
 import { useAuth } from '@/hooks/useAuth'
 import { useAppDispatch, useAppSelector } from '@/hooks/useAppDispatch'
@@ -55,6 +55,11 @@ export default function Navbar() {
                     </Link>
                   </>
                 )}
+
+                {/* Fairness dashboard */}
+                <Link to="/fairness" className="flex items-center gap-1.5 text-gray-700 hover:text-purple-600 font-medium transition">
+                  <BarChart2 className="w-4 h-4" /> Fairness
+                </Link>
 
                 {/* Notification bell */}
                 <button
@@ -117,6 +122,9 @@ export default function Navbar() {
                   </Link>
                 </>
               )}
+              <Link to="/fairness" className="block py-2 text-gray-700 font-medium" onClick={() => setMobileOpen(false)}>
+                Fairness Metrics
+              </Link>
               <button onClick={handleLogout} className="w-full btn-outline text-sm">Sign Out</button>
             </>
           ) : (

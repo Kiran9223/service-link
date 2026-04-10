@@ -17,6 +17,9 @@ const ProviderServicesPage = lazy(() => import('@/features/dashboard/provider/Pr
 const ProviderAvailabilityPage = lazy(() => import('@/features/dashboard/provider/ProviderAvailabilityPage'))
 const BookingDetailPage = lazy(() => import('@/features/booking/BookingDetailPage'))
 const NotificationsPage = lazy(() => import('@/features/notifications/NotificationsPage'))
+const ForgotPasswordPage = lazy(() => import('@/features/auth/ForgotPasswordPage'))
+const ResetPasswordPage  = lazy(() => import('@/features/auth/ResetPasswordPage'))
+const FairnessDashboard  = lazy(() => import('@/features/fairness/FairnessDashboard'))
 
 const Wrap = ({ children }: { children: React.ReactNode }) => (
   <Suspense fallback={<LoadingSpinner fullPage />}>{children}</Suspense>
@@ -31,8 +34,10 @@ export const router = createBrowserRouter([
       { index: true,          element: <Wrap><HomePage /></Wrap> },
       { path: 'login',        element: <Wrap><LoginPage /></Wrap> },
       { path: 'register',     element: <Wrap><RegisterPage /></Wrap> },
-      { path: 'services',     element: <Wrap><ServicesPage /></Wrap> },
-      { path: 'services/:id', element: <Wrap><ServiceDetailPage /></Wrap> },
+      { path: 'services',          element: <Wrap><ServicesPage /></Wrap> },
+      { path: 'services/:id',      element: <Wrap><ServiceDetailPage /></Wrap> },
+      { path: 'forgot-password',   element: <Wrap><ForgotPasswordPage /></Wrap> },
+      { path: 'reset-password',    element: <Wrap><ResetPasswordPage /></Wrap> },
 
       // ── Protected: any authenticated user ────────────────────────────
       {
@@ -41,6 +46,7 @@ export const router = createBrowserRouter([
           { path: 'notifications',   element: <Wrap><NotificationsPage /></Wrap> },
           { path: 'bookings/:id',    element: <Wrap><BookingDetailPage /></Wrap> },
           { path: 'book/:serviceId', element: <Wrap><BookingPage /></Wrap> },
+          { path: 'fairness',        element: <Wrap><FairnessDashboard /></Wrap> },
         ],
       },
 

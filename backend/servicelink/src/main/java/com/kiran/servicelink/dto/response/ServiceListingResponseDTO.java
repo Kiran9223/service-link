@@ -61,6 +61,10 @@ public class ServiceListingResponseDTO {
         private Integer totalBookingsCompleted;
         private Integer yearsOfExperience;
         private String profilePhotoUrl;
+        private BigDecimal providerRating;
+        private LocalDateTime createdAt;
+        private Double latitude;
+        private Double longitude;
     }
 
     @Data

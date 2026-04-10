@@ -36,6 +36,7 @@ class ChatRequest(BaseModel):
     message: str
     session_id: Optional[str] = None
     user_id: Optional[int] = None
+    user_jwt: Optional[str] = None
 
 # ── Response ──────────────────────────────────────────────────────────────────
 class ChatResponse(BaseModel):
@@ -43,5 +44,5 @@ class ChatResponse(BaseModel):
     session_id: str
     state: ConversationState
     quick_replies: list[QuickReply] = []
-    booking_confirmation: Optional[BookingConfirmation] = None
-    booking: Optional[BookingResult] = None
+    booking_confirmation: Optional[dict] = None
+    booking: Optional[dict] = None

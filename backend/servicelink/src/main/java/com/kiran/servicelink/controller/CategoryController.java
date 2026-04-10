@@ -39,7 +39,7 @@ public class CategoryController {
      * Get category by ID
      */
     @GetMapping("/{id}")
-    public ResponseEntity<CategoryResponseDTO> getCategoryById(@PathVariable Long id) {
+    public ResponseEntity<CategoryResponseDTO> getCategoryById(@PathVariable("id") Long id) {
         log.info("GET /api/categories/{} - Fetching category by ID", id);
 
         CategoryResponseDTO category = categoryService.getCategoryById(id);

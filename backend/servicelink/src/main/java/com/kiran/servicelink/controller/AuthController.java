@@ -1,9 +1,12 @@
 package com.kiran.servicelink.controller;
 
+import com.kiran.servicelink.dto.request.ForgotPasswordRequest;
 import com.kiran.servicelink.dto.request.LoginRequest;
 import com.kiran.servicelink.dto.request.RegisterProviderRequest;
 import com.kiran.servicelink.dto.request.RegisterRequest;
+import com.kiran.servicelink.dto.request.ResetPasswordRequest;
 import com.kiran.servicelink.dto.response.AuthResponse;
+import com.kiran.servicelink.dto.response.PasswordResetResponse;
 import com.kiran.servicelink.dto.response.UserDTO;
 import com.kiran.servicelink.service.AuthService;
 import jakarta.validation.Valid;
@@ -82,6 +85,29 @@ public class AuthController {
         logger.info("Get current user full info request received");
         AuthResponse response = authService.getCurrentUserWithProvider();
         return ResponseEntity.ok(response);
+    }
+
+    /**
+     * Request a password reset token (thesis demo: token returned in response)
+     * POST /api/auth/forgot-password
+     */
+    @PostMapping("/forgot-password")
+    public ResponseEntity<PasswordResetResponse> forgotPassword(
+            @Valid @RequestBody ForgotPasswordRequest request) {
+        logger.info("Forgot password request for email: {}", request.getEmail());
+        PasswordResetResponse response = authService.forgotPassword(request);
+        return ResponseEntity.ok(response);
+    }
+
+    /**
+     * Reset password using token
+     * POST /api/auth/reset-password
+     */
+    @PostMapping("/reset-password")
+    public ResponseEntity<Void> resetPassword(
+            @Valid @RequestBody ResetPasswordRequest request) {
+        authService.resetPassword(request);
+        return ResponseEntity.noContent().build();
     }
 
     /**

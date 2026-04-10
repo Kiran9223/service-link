@@ -7,6 +7,7 @@ export const WS_URL = 'http://localhost:8081/ws/notifications'
 
 export const TOKEN_KEY = 'servicelink_token'
 export const USER_KEY = 'servicelink_user'
+export const PROVIDER_KEY = 'servicelink_provider'
 
 export const BOOKING_STATUS = {
   PENDING: 'PENDING',
