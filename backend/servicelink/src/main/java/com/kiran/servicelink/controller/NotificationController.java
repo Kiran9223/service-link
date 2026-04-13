@@ -60,8 +60,8 @@ public class NotificationController {
     @GetMapping
     @PreAuthorize("isAuthenticated()")
     public ResponseEntity<Page<NotificationResponseDTO>> getUserNotifications(
-            @RequestParam(defaultValue = "0") int page,
-            @RequestParam(defaultValue = "20") int size,
+            @RequestParam(value = "page", defaultValue = "0") int page,
+            @RequestParam(value = "size", defaultValue = "20") int size,
             HttpServletRequest httpRequest) {
 
         log.info("GET /api/notifications - page: {}, size: {}", page, size);
@@ -127,7 +127,7 @@ public class NotificationController {
     @PutMapping("/{id}/read")
     @PreAuthorize("isAuthenticated()")
     public ResponseEntity<Void> markAsRead(
-            @PathVariable Long id,
+            @PathVariable("id") Long id,
             HttpServletRequest httpRequest) {
 
         log.info("PUT /api/notifications/{}/read", id);
@@ -180,7 +180,7 @@ public class NotificationController {
     @DeleteMapping("/{id}")
     @PreAuthorize("isAuthenticated()")
     public ResponseEntity<Void> deleteNotification(
-            @PathVariable Long id,
+            @PathVariable("id") Long id,
             HttpServletRequest httpRequest) {
 
         log.info("DELETE /api/notifications/{}", id);

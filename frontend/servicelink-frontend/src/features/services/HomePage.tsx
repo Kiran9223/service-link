@@ -25,6 +25,21 @@ interface QuickReply {
   value: string
 }
 
+type ApiState = 'GATHERING' | 'PRESENTING' | 'CONFIRMING' | 'BOOKED' | 'ERROR'
+
+interface BookingConfirmation {
+  serviceId: number
+  providerId: number
+  providerName: string
+  serviceName: string
+  date: string
+  time: string
+  price: string
+  priceType: string
+  slotId: number
+  isFairnessBoost: boolean
+}
+
 // ── Category data ─────────────────────────────────────────────────────────────
 const CATEGORIES = [
   { name: 'Plumbing',   icon: Wrench,     gradient: 'from-blue-500 to-blue-600',     providers: '1,234' },
@@ -46,83 +61,6 @@ const TRADITIONAL_STEPS = [
   { step: 4, title: 'Pick Date & Time',   desc: 'Navigate availability calendar and find an open slot',        time: '5–10 min'  },
   { step: 5, title: 'Review & Confirm',   desc: 'Check all details, pricing, and submit your booking request', time: '2–3 min'   },
 ]
-
-// ── Simulated AI conversation flow ────────────────────────────────────────────
-// In future this will call your FastAPI AI service.
-// For now it simulates the conversation to demonstrate the UX.
-const AI_FLOWS: Record<string, { reply: string; quickReplies?: QuickReply[] }> = {
-  default: {
-    reply: "I'd be happy to help you find a service provider! Could you tell me what kind of service you need? For example: plumbing, electrical, cleaning, HVAC, or something else?",
-    quickReplies: [
-      { label: '🔧 Plumbing', value: 'I need a plumber' },
-      { label: '⚡ Electrical', value: 'I need an electrician' },
-      { label: '✨ Cleaning', value: 'I need house cleaning' },
-      { label: '❄️ HVAC', value: 'I need HVAC service' },
-    ],
-  },
-  plumb: {
-    reply: "Got it — plumbing! When do you need this done, and do you have a budget in mind? For example: *\"Tomorrow morning, under $150\"*",
-    quickReplies: [
-      { label: '📅 Today', value: 'Today, flexible budget' },
-      { label: '📅 Tomorrow morning', value: 'Tomorrow morning, under $150' },
-      { label: '📅 This weekend', value: 'This weekend, under $200' },
-    ],
-  },
-  electric: {
-    reply: "Electrical work — noted! When would work best for you, and what's your approximate budget?",
-    quickReplies: [
-      { label: '📅 Today', value: 'Today, flexible budget' },
-      { label: '📅 Tomorrow', value: 'Tomorrow, under $200' },
-      { label: '📅 This weekend', value: 'This weekend, flexible' },
-    ],
-  },
-  clean: {
-    reply: "House cleaning — great! When do you need it, and how large is the space? I'll match you with the best available cleaner.",
-    quickReplies: [
-      { label: '📅 Today', value: 'Today, 2-bedroom apartment' },
-      { label: '📅 Tomorrow', value: 'Tomorrow, 3-bedroom house' },
-      { label: '📅 This weekend', value: 'This weekend, flexible' },
-    ],
-  },
-  hvac: {
-    reply: "HVAC service — on it! Is this for maintenance, repair, or installation? And when works best for you?",
-    quickReplies: [
-      { label: '🔨 Repair', value: 'Repair, as soon as possible' },
-      { label: '🔧 Maintenance', value: 'Maintenance, this week' },
-      { label: '🆕 Installation', value: 'New installation, flexible' },
-    ],
-  },
-  time: {
-    reply: "Perfect. Let me search for available providers in your area...",
-    quickReplies: [],
-  },
-  searching: {
-    reply: "✅ Found **3 top-rated providers** near Fullerton, CA:\n\n**1. Mike's Pro Plumbing** ⭐ 4.9 · 203 reviews · $95/hr\n**2. QuickFix Services** ⭐ 4.7 · 127 reviews · $85/hr\n**3. AllStar Home Services** ⭐ 4.8 · 89 reviews · $110/hr\n\nI recommend **Mike's Pro Plumbing** — highest rated, available tomorrow at 9 AM. Shall I book that slot?",
-    quickReplies: [
-      { label: '✅ Yes, book Mike\'s!', value: 'Yes, book Mike\'s Pro Plumbing for tomorrow 9 AM' },
-      { label: '👀 Show all options', value: 'Show me all available providers' },
-    ],
-  },
-  confirm: {
-    reply: "🎉 **Booking Confirmed!**\n\nHere's your summary:\n- **Provider:** Mike's Pro Plumbing\n- **Date:** Tomorrow, 9:00 AM\n- **Service:** Plumbing\n- **Est. Cost:** $95/hr\n- **Booking ID:** #SL-2024-8841\n\nYou'll receive a confirmation notification shortly. Total time: under 60 seconds! 🚀",
-    quickReplies: [
-      { label: '📋 View Booking', value: 'view booking' },
-      { label: '🏠 Back to Home', value: 'done' },
-    ],
-  },
-}
-
-function getAIResponse(message: string): string {
-  const m = message.toLowerCase()
-  if (m.includes('plumb') || m.includes('pipe') || m.includes('leak')) return 'plumb'
-  if (m.includes('electric') || m.includes('wire') || m.includes('outlet')) return 'electric'
-  if (m.includes('clean')) return 'clean'
-  if (m.includes('hvac') || m.includes('heat') || m.includes('cool') || m.includes('ac')) return 'hvac'
-  if (m.includes('yes') && m.includes('book')) return 'confirm'
-  if (m.includes('yes') || m.includes('book') || m.includes('confirm')) return 'confirm'
-  if (m.includes('tomorrow') || m.includes('today') || m.includes('weekend') || m.includes('morning')) return 'time'
-  return 'default'
-}
 
 // ── Hooks ─────────────────────────────────────────────────────────────────────
 function useInView(threshold = 0.15) {
@@ -167,14 +105,21 @@ function AIChatPanel({
   onClose: () => void
   onBookingComplete: () => void
 }) {
-  const [messages,    setMessages]    = useState<ChatMessage[]>([])
-  const [input,       setInput]       = useState('')
-  const [isTyping,    setIsTyping]    = useState(false)
-  const [quickReplies, setQuickReplies] = useState<QuickReply[]>([])
-  const [step,        setStep]        = useState<string>('default')
-  const [booked,      setBooked]      = useState(false)
-  const messagesEndRef                = useRef<HTMLDivElement>(null)
-  const inputRef                      = useRef<HTMLInputElement>(null)
+  const navigate        = useNavigate()
+  const isAuthenticated = useAppSelector(s => s.auth.isAuthenticated)
+  const token           = useAppSelector(s => s.auth.token)
+  const currentUser     = useAppSelector(s => s.auth.user)
+
+  const [messages,            setMessages]            = useState<ChatMessage[]>([])
+  const [input,               setInput]               = useState('')
+  const [isTyping,            setIsTyping]            = useState(false)
+  const [quickReplies,        setQuickReplies]        = useState<QuickReply[]>([])
+  const [booked,              setBooked]              = useState(false)
+  const [sessionId,           setSessionId]           = useState<string | null>(null)
+  const [pendingConfirmation, setPendingConfirmation] = useState<BookingConfirmation | null>(null)
+  const [apiState,            setApiState]            = useState<ApiState | null>(null)
+  const messagesEndRef                                = useRef<HTMLDivElement>(null)
+  const inputRef                                      = useRef<HTMLInputElement>(null)
 
   // Scroll to bottom whenever messages change
   useEffect(() => {
@@ -188,14 +133,18 @@ function AIChatPanel({
         setIsTyping(true)
         setTimeout(() => {
           setIsTyping(false)
-          const flow = AI_FLOWS['default']
           setMessages([{
             id: '0',
             role: 'assistant',
-            content: flow.reply,
+            content: "I'd be happy to help you find a service provider! Could you tell me what kind of service you need? For example: plumbing, electrical, cleaning, HVAC, or something else?",
             timestamp: new Date(),
           }])
-          setQuickReplies(flow.quickReplies ?? [])
+          setQuickReplies([
+            { label: '🔧 Plumbing',    value: 'I need a plumber'        },
+            { label: '⚡ Electrical',   value: 'I need an electrician'   },
+            { label: '✨ Cleaning',     value: 'I need house cleaning'   },
+            { label: '❄️ HVAC',        value: 'I need HVAC service'     },
+          ])
         }, 1200)
       }, 400)
     }
@@ -210,14 +159,44 @@ function AIChatPanel({
         setInput('')
         setIsTyping(false)
         setQuickReplies([])
-        setStep('default')
         setBooked(false)
+        setSessionId(null)
+        setPendingConfirmation(null)
+        setApiState(null)
       }, 400)
     }
   }, [isOpen])
 
-  const sendMessage = useCallback((text: string) => {
+  const sendMessage = useCallback(async (text: string) => {
     if (!text.trim() || isTyping) return
+
+    // Login navigation — triggered by the guest-guard quick reply chip
+    if (text === '__navigate_to_login__') {
+      navigate('/login')
+      return
+    }
+
+    // Guest guard: block confirmation if not logged in
+    if (apiState === 'CONFIRMING' && !isAuthenticated) {
+      const userMsg: ChatMessage = {
+        id: Date.now().toString(),
+        role: 'user',
+        content: text.trim(),
+        timestamp: new Date(),
+      }
+      setMessages(prev => [...prev, userMsg])
+      setInput('')
+      setTimeout(() => {
+        setMessages(prev => [...prev, {
+          id: (Date.now() + 1).toString(),
+          role: 'assistant' as const,
+          content: 'Please log in to complete your booking.',
+          timestamp: new Date(),
+        }])
+        setQuickReplies([{ label: '🔐 Log in →', value: '__navigate_to_login__' }])
+      }, 400)
+      return
+    }
 
     const userMsg: ChatMessage = {
       id: Date.now().toString(),
@@ -230,32 +209,56 @@ function AIChatPanel({
     setQuickReplies([])
     setIsTyping(true)
 
-    // Determine next flow step
-    const nextStep = step === 'time' ? 'searching'
-      : step === 'searching' ? 'confirm'
-      : getAIResponse(text)
+    try {
+      const res = await fetch('http://localhost:8000/api/ai/chat', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          message: text.trim(),
+          session_id: sessionId,
+          user_id: currentUser?.id ?? null,
+          user_jwt: token,
+        }),
+      })
 
-    const delay = nextStep === 'searching' ? 2000 : 1200
+      if (!res.ok) throw new Error(`HTTP ${res.status}`)
 
-    setTimeout(() => {
+      const data = await res.json()
+
+      setSessionId(data.session_id)
+      setApiState(data.state)
       setIsTyping(false)
-      const flow = AI_FLOWS[nextStep] ?? AI_FLOWS['default']
+
       const assistantMsg: ChatMessage = {
         id: (Date.now() + 1).toString(),
         role: 'assistant',
-        content: flow.reply,
+        content: data.message,
         timestamp: new Date(),
       }
       setMessages(prev => [...prev, assistantMsg])
-      setQuickReplies(flow.quickReplies ?? [])
-      setStep(nextStep)
+      setQuickReplies(data.quick_replies ?? [])
 
-      if (nextStep === 'confirm') {
+      if (data.state === 'CONFIRMING' && data.booking_confirmation) {
+        setPendingConfirmation(data.booking_confirmation)
+      } else {
+        setPendingConfirmation(null)
+      }
+
+      if (data.state === 'BOOKED' && data.booking) {
         setBooked(true)
         onBookingComplete()
+        setTimeout(() => navigate(`/bookings/${data.booking.bookingId}`), 2000)
       }
-    }, delay)
-  }, [isTyping, step, onBookingComplete])
+    } catch {
+      setIsTyping(false)
+      setMessages(prev => [...prev, {
+        id: (Date.now() + 1).toString(),
+        role: 'assistant' as const,
+        content: 'Sorry, something went wrong. Please try again.',
+        timestamp: new Date(),
+      }])
+    }
+  }, [isTyping, apiState, isAuthenticated, sessionId, token, currentUser, onBookingComplete, navigate])
 
   // Render markdown-like bold (**text**)
   const renderContent = (content: string) => {
@@ -319,12 +322,11 @@ function AIChatPanel({
             <div
               className="h-full bg-gradient-to-r from-purple-500 to-blue-500 transition-all duration-700"
               style={{
-                width: booked ? '100%'
-                  : step === 'confirm' ? '100%'
-                  : step === 'searching' ? '80%'
-                  : step === 'time' ? '60%'
-                  : ['plumb','electric','clean','hvac'].includes(step) ? '40%'
-                  : messages.length > 0 ? '20%'
+                width: apiState === 'BOOKED'      ? '100%'
+                  : apiState === 'CONFIRMING'      ? '75%'
+                  : apiState === 'PRESENTING'      ? '50%'
+                  : apiState === 'GATHERING'       ? '25%'
+                  : messages.length > 0            ? '10%'
                   : '0%'
               }}
             />
@@ -389,6 +391,56 @@ function AIChatPanel({
               </div>
             )}
 
+            {/* Booking confirmation card — shown when AI returns CONFIRMING state */}
+            {pendingConfirmation && !booked && (
+              <div className="bg-gradient-to-br from-purple-50 to-blue-50 border-2 border-purple-200 rounded-2xl p-4 animate-fadeInUp">
+                <p className="text-purple-700 font-bold text-sm mb-3">Confirm Your Booking</p>
+                <div className="space-y-2 text-sm mb-4">
+                  <div className="flex justify-between">
+                    <span className="text-gray-500">Provider</span>
+                    <span className="font-semibold flex items-center gap-1.5">
+                      {pendingConfirmation.providerName}
+                      {pendingConfirmation.isFairnessBoost && (
+                        <span className="text-xs bg-blue-100 text-blue-700 px-1.5 py-0.5 rounded-full font-bold">🆕 NEW</span>
+                      )}
+                    </span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-gray-500">Service</span>
+                    <span className="font-semibold">{pendingConfirmation.serviceName}</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-gray-500">Date</span>
+                    <span className="font-semibold">{pendingConfirmation.date}</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-gray-500">Time</span>
+                    <span className="font-semibold">{pendingConfirmation.time}</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-gray-500">Price</span>
+                    <span className="font-semibold">{pendingConfirmation.price} <span className="text-gray-400 font-normal">({pendingConfirmation.priceType})</span></span>
+                  </div>
+                </div>
+                <div className="flex gap-2">
+                  <button
+                    onClick={() => sendMessage('yes')}
+                    disabled={isTyping}
+                    className="flex-1 py-2 bg-gradient-to-r from-purple-600 to-blue-600 text-white text-xs font-semibold rounded-xl hover:opacity-90 transition-opacity disabled:opacity-50"
+                  >
+                    ✅ Confirm Booking
+                  </button>
+                  <button
+                    onClick={() => sendMessage('no')}
+                    disabled={isTyping}
+                    className="flex-1 py-2 bg-gray-100 hover:bg-gray-200 text-gray-700 text-xs font-semibold rounded-xl transition-colors disabled:opacity-50"
+                  >
+                    ❌ Go Back
+                  </button>
+                </div>
+              </div>
+            )}
+
             {/* Booking success card */}
             {booked && (
               <div className="bg-gradient-to-br from-green-50 to-emerald-50 border-2 border-green-200 rounded-2xl p-4 animate-fadeInUp">
@@ -412,8 +464,8 @@ function AIChatPanel({
             <div ref={messagesEndRef} />
           </div>
 
-          {/* Quick replies */}
-          {quickReplies.length > 0 && (
+          {/* Quick replies — hidden during CONFIRMING since BookingConfirmCard has its own buttons */}
+          {quickReplies.length > 0 && apiState !== 'CONFIRMING' && (
             <div className="px-4 pb-2 flex flex-wrap gap-2 flex-shrink-0">
               {quickReplies.map(qr => (
                 <button

@@ -174,6 +174,16 @@ public class ServiceListingService {
     // ========== Public Operations ==========
 
     /**
+     * Get distinct cities where active providers exist.
+     * Optionally filtered by service category name.
+     */
+    @Transactional(readOnly = true)
+    public List<String> getCoverageAreas(String category) {
+        log.debug("Fetching coverage areas for category: {}", category);
+        return serviceListingRepository.findDistinctCities(category);
+    }
+
+    /**
      * Get service by ID (public)
      */
     @Transactional(readOnly = true)
@@ -421,6 +431,9 @@ public class ServiceListingService {
                 .totalBookingsCompleted(provider.getTotalBookingsCompleted())
                 .yearsOfExperience(provider.getYearsOfExperience())
                 .profilePhotoUrl(provider.getProfilePhotoUrl())
+                .createdAt(provider.getCreatedAt())
+                .latitude(provider.getLatitude())
+                .longitude(provider.getLongitude())
                 .build();
     }
 

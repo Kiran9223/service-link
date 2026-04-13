@@ -4,12 +4,18 @@ import {
   CheckCircle, Clock, Play, XCircle, Calendar,
   MapPin, ArrowRight, Star, Loader2, X,
   TrendingUp, Package, Users, DollarSign,
-  AlertCircle, ChevronDown, Search, Bell, Tag,
+  AlertCircle, ChevronDown, Search, Bell, Tag, MessageSquare,
+  Zap, BarChart2,
 } from 'lucide-react'
 import { bookingApi } from '@/api/bookingApi'
+import { ratingApi } from '@/api/ratingApi'
 import type { BookingResponse, BookingStatus } from '@/types/booking.types'
+import type { RatingResponse } from '@/types/rating.types'
 import { useAppSelector } from '@/hooks/useAppDispatch'
 import { BOOKING_STATUS_CONFIG } from '@/config/constants'
+import StarRating from '@/components/rating/StarRating'
+import { analyticsApi } from '@/api/analyticsApi'
+import type { FairnessMetric } from '@/api/analyticsApi'
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
 function formatTime(time: string): string {
@@ -242,6 +248,285 @@ function TodaySchedule({ bookings }: { bookings: BookingResponse[] }) {
   )
 }
 
+// ── Fairness score bar ────────────────────────────────────────────────────────
+function FairnessScoreBar({ value, color, label }: { value: number; color: string; label: string }) {
+  const pct = Math.min(Math.max(value, 0), 1) * 100
+  return (
+    <div className="space-y-1">
+      <div className="flex items-center justify-between text-xs">
+        <span className="text-gray-500">{label}</span>
+        <span className="font-semibold text-gray-700">{pct.toFixed(0)}%</span>
+      </div>
+      <div className="h-2 bg-gray-100 rounded-full overflow-hidden">
+        <div className={`h-2 rounded-full transition-all ${color}`} style={{ width: `${pct}%` }} />
+      </div>
+    </div>
+  )
+}
+
+// ── My Visibility section ─────────────────────────────────────────────────────
+function FairnessVisibilitySection({
+  myMetric,
+  allMetrics,
+  myUserId,
+}: {
+  myMetric: FairnessMetric | undefined
+  allMetrics: FairnessMetric[]
+  myUserId: number | undefined
+}) {
+  const ranked = [...allMetrics].sort((a, b) => b.finalScore - a.finalScore)
+  const myRank = ranked.findIndex(m => m.providerId === myUserId) + 1
+  const totalProviders = ranked.length
+
+  return (
+    <div className="mt-5 space-y-4">
+      {/* Section label */}
+      <p className="text-xs font-bold text-gray-400 uppercase tracking-wide flex items-center gap-1.5">
+        <BarChart2 className="w-3.5 h-3.5 text-purple-500" /> My Visibility Score
+      </p>
+
+      {/* ── No data state ── */}
+      {!myMetric ? (
+        <div className="card p-8 text-center">
+          <BarChart2 className="w-10 h-10 text-gray-200 mx-auto mb-3" />
+          <p className="text-sm font-semibold text-gray-500">No visibility data yet</p>
+          <p className="text-xs text-gray-400 mt-1">Complete at least one booking to see your fairness score.</p>
+        </div>
+      ) : (
+        <>
+          {/* ── My Score card ── */}
+          <div className={`card p-5 border-2 ${myMetric.isNewProvider ? 'border-purple-200 bg-purple-50/30' : 'border-green-100 bg-green-50/20'}`}>
+            <div className="flex items-start justify-between gap-4 mb-4">
+              <div>
+                <p className="text-[10px] font-bold text-gray-400 uppercase tracking-wide mb-1">Your Fairness Score</p>
+                <p className="text-5xl font-extrabold text-gray-900 leading-none">{myMetric.finalScore.toFixed(2)}</p>
+                <div className="flex items-center gap-3 mt-2 flex-wrap">
+                  <span className="text-xs text-gray-500">
+                    Base: <strong className="text-gray-700">{myMetric.baseScore.toFixed(2)}</strong>
+                  </span>
+                  {myMetric.fairnessBoost > 0 && (
+                    <span className="text-xs text-purple-600 font-semibold">
+                      + {myMetric.fairnessBoost.toFixed(2)} boost
+                    </span>
+                  )}
+                </div>
+              </div>
+              <div className="flex-shrink-0">
+                {myMetric.isNewProvider ? (
+                  <span className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-purple-100 text-purple-700 text-xs font-bold rounded-full">
+                    <Zap className="w-3.5 h-3.5" /> Boost Active
+                  </span>
+                ) : (
+                  <span className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-green-100 text-green-700 text-xs font-bold rounded-full">
+                    ⭐ Established
+                  </span>
+                )}
+              </div>
+            </div>
+
+            <div className={`text-xs rounded-xl px-4 py-3 leading-relaxed ${myMetric.isNewProvider ? 'bg-purple-100/60 text-purple-800' : 'bg-green-100/50 text-green-800'}`}>
+              {myMetric.isNewProvider
+                ? '🚀 You have fewer than 20 bookings — you\'re receiving a +0.15 visibility boost to compete with established providers.'
+                : '⭐ You\'ve earned your ranking through completed bookings and ratings. Your score reflects your real performance.'
+              }
+            </div>
+          </div>
+
+          {/* ── My Ranking card ── */}
+          <div className="card p-5">
+            <p className="text-xs font-bold text-gray-400 uppercase tracking-wide flex items-center gap-1.5 mb-3">
+              <TrendingUp className="w-3.5 h-3.5 text-purple-500" /> My Ranking
+            </p>
+
+            {/* Rank highlight */}
+            <div className="flex items-center gap-3 mb-4 p-3 bg-purple-50 rounded-xl border border-purple-100">
+              <div className="w-10 h-10 bg-gradient-to-br from-purple-600 to-blue-600 rounded-xl flex items-center justify-center flex-shrink-0 shadow-sm">
+                <span className="text-white font-extrabold text-sm">#{myRank}</span>
+              </div>
+              <div>
+                <p className="text-sm font-bold text-gray-900">
+                  You rank #{myRank} out of {totalProviders} provider{totalProviders !== 1 ? 's' : ''}
+                </p>
+                <p className="text-xs text-gray-500 mt-0.5">Final score: {myMetric.finalScore.toFixed(2)}</p>
+              </div>
+            </div>
+
+            {/* Ranked list */}
+            <div className="space-y-0.5 max-h-52 overflow-y-auto pr-1">
+              {ranked.map((m, idx) => {
+                const isMe = m.providerId === myUserId
+                return (
+                  <div
+                    key={m.providerId}
+                    className={`flex items-center gap-2 px-3 py-2 rounded-lg text-sm ${
+                      isMe
+                        ? 'bg-purple-100 border border-purple-200'
+                        : 'hover:bg-gray-50'
+                    }`}
+                  >
+                    <span className={`text-xs font-bold w-6 text-center flex-shrink-0 ${isMe ? 'text-purple-700' : 'text-gray-400'}`}>
+                      #{idx + 1}
+                    </span>
+                    <span className={`flex-1 truncate ${isMe ? 'font-bold text-purple-900' : 'text-gray-700'}`}>
+                      {m.providerName}{isMe && ' (you)'}
+                    </span>
+                    <span className="text-xs text-gray-400 flex-shrink-0">
+                      {m.totalBookingsCompleted} jobs
+                    </span>
+                    {m.isNewProvider && (
+                      <Zap className="w-3 h-3 text-purple-400 flex-shrink-0" title="Receiving fairness boost" />
+                    )}
+                    <span className={`text-xs font-bold w-10 text-right flex-shrink-0 ${isMe ? 'text-purple-700' : 'text-gray-500'}`}>
+                      {m.finalScore.toFixed(2)}
+                    </span>
+                  </div>
+                )
+              })}
+            </div>
+          </div>
+
+          {/* ── Score breakdown card ── */}
+          <div className="card p-5">
+            <p className="text-xs font-bold text-gray-400 uppercase tracking-wide flex items-center gap-1.5 mb-4">
+              <BarChart2 className="w-3.5 h-3.5 text-purple-500" /> What Affects My Score
+            </p>
+            <div className="space-y-3">
+              <FairnessScoreBar
+                value={myMetric.ratingScore / 0.4}
+                color="bg-yellow-400"
+                label={`Rating (${myMetric.overallRating.toFixed(1)}★) — up to 40% of score`}
+              />
+              <FairnessScoreBar
+                value={myMetric.popularityScore / 0.2}
+                color="bg-blue-400"
+                label={`Experience (${myMetric.totalBookingsCompleted} bookings) — up to 20% of score`}
+              />
+              <FairnessScoreBar
+                value={1.0}
+                color="bg-indigo-300"
+                label="Availability — 20% (base credit)"
+              />
+              <FairnessScoreBar
+                value={1.0}
+                color="bg-cyan-300"
+                label="Coverage Area — 20% (base credit)"
+              />
+            </div>
+
+            {myMetric.isNewProvider && (
+              <div className="mt-4 p-3 bg-purple-50 rounded-xl border border-purple-100 flex items-start gap-2.5">
+                <Zap className="w-4 h-4 text-purple-500 flex-shrink-0 mt-0.5" />
+                <div>
+                  <p className="text-xs font-bold text-purple-700">
+                    +{(myMetric.fairnessBoost * 100).toFixed(0)}% Fairness Boost is active
+                  </p>
+                  <p className="text-xs text-purple-600 mt-0.5">
+                    Reach 20 completed bookings to graduate from the boost program.
+                    You have {myMetric.totalBookingsCompleted} — {20 - myMetric.totalBookingsCompleted} more to go.
+                  </p>
+                </div>
+              </div>
+            )}
+          </div>
+        </>
+      )}
+    </div>
+  )
+}
+
+// ── Reviews panel ─────────────────────────────────────────────────────────────
+function ReviewsPanel({ reviews, overallRating, loading }: {
+  reviews: RatingResponse[]
+  overallRating?: number
+  loading: boolean
+}) {
+  function timeAgo(isoDate: string) {
+    const diff = Date.now() - new Date(isoDate).getTime()
+    const days = Math.floor(diff / 86400000)
+    if (days === 0) return 'Today'
+    if (days === 1) return 'Yesterday'
+    if (days < 7)  return `${days} days ago`
+    if (days < 30) return `${Math.floor(days / 7)} week${Math.floor(days / 7) !== 1 ? 's' : ''} ago`
+    return `${Math.floor(days / 30)} month${Math.floor(days / 30) !== 1 ? 's' : ''} ago`
+  }
+
+  // Star distribution
+  const dist = [5, 4, 3, 2, 1].map(s => ({
+    star: s,
+    count: reviews.filter(r => r.stars === s).length,
+  }))
+  const max = Math.max(...dist.map(d => d.count), 1)
+
+  return (
+    <div className="card p-5 mt-5">
+      <p className="text-xs font-bold text-gray-400 uppercase tracking-wide flex items-center gap-1.5 mb-4">
+        <MessageSquare className="w-3.5 h-3.5 text-purple-500" /> Reviews & Ratings
+      </p>
+
+      {loading ? (
+        <div className="flex justify-center py-8">
+          <Loader2 className="w-6 h-6 text-purple-400 animate-spin" />
+        </div>
+      ) : reviews.length === 0 ? (
+        <div className="text-center py-8">
+          <Star className="w-10 h-10 text-gray-200 mx-auto mb-3" />
+          <p className="text-sm text-gray-500 font-medium">No reviews yet</p>
+          <p className="text-xs text-gray-400 mt-1">Completed bookings will show up here</p>
+        </div>
+      ) : (
+        <>
+          {/* Summary header */}
+          <div className="flex items-start gap-6 mb-5 pb-5 border-b border-gray-100">
+            <div className="text-center flex-shrink-0">
+              <p className="text-4xl font-extrabold text-gray-900">
+                {overallRating != null ? overallRating.toFixed(1) : '—'}
+              </p>
+              <StarRating value={Math.round(overallRating ?? 0)} readOnly size="sm" />
+              <p className="text-xs text-gray-400 mt-1">{reviews.length} review{reviews.length !== 1 ? 's' : ''}</p>
+            </div>
+            <div className="flex-1 space-y-1.5">
+              {dist.map(({ star, count }) => (
+                <div key={star} className="flex items-center gap-2">
+                  <span className="text-xs text-gray-500 w-3">{star}</span>
+                  <Star className="w-3 h-3 fill-yellow-400 text-yellow-400 flex-shrink-0" />
+                  <div className="flex-1 h-2 bg-gray-100 rounded-full overflow-hidden">
+                    <div
+                      className="h-full bg-yellow-400 rounded-full transition-all"
+                      style={{ width: `${(count / max) * 100}%` }}
+                    />
+                  </div>
+                  <span className="text-xs text-gray-400 w-4 text-right">{count}</span>
+                </div>
+              ))}
+            </div>
+          </div>
+
+          {/* Review list */}
+          <div className="space-y-4">
+            {reviews.map(r => (
+              <div key={r.id} className="flex items-start gap-3">
+                <div className="w-8 h-8 bg-gradient-to-br from-gray-400 to-gray-500 rounded-full flex items-center justify-center flex-shrink-0 text-white text-xs font-bold">
+                  {r.customerName.charAt(0).toUpperCase()}
+                </div>
+                <div className="flex-1 min-w-0">
+                  <div className="flex items-center justify-between gap-2 flex-wrap">
+                    <span className="text-sm font-semibold text-gray-800">{r.customerName}</span>
+                    <span className="text-xs text-gray-400">{timeAgo(r.createdAt)}</span>
+                  </div>
+                  <StarRating value={r.stars} readOnly size="sm" />
+                  {r.reviewText && (
+                    <p className="text-sm text-gray-600 mt-1 leading-relaxed">"{r.reviewText}"</p>
+                  )}
+                </div>
+              </div>
+            ))}
+          </div>
+        </>
+      )}
+    </div>
+  )
+}
+
 // ── Empty state ───────────────────────────────────────────────────────────────
 function EmptyState({ message }: { message: string }) {
   return (
@@ -263,13 +548,16 @@ export default function ProviderDashboard() {
   const user      = useAppSelector(s => s.auth.user)
   const provider  = useAppSelector(s => s.auth.provider)
 
-  const [bookings,      setBookings]      = useState<BookingResponse[]>([])
-  const [loading,       setLoading]       = useState(true)
-  const [actionLoading, setActionLoading] = useState<number | null>(null)
-  const [activeTab,     setActiveTab]     = useState<TabType>('pending')
-  const [searchQuery,   setSearchQuery]   = useState('')
-  const [statusFilter,  setStatusFilter]  = useState<BookingStatus | 'ALL'>('ALL')
-  const [actionError,   setActionError]   = useState<string | null>(null)
+  const [bookings,       setBookings]       = useState<BookingResponse[]>([])
+  const [loading,        setLoading]        = useState(true)
+  const [actionLoading,  setActionLoading]  = useState<number | null>(null)
+  const [activeTab,      setActiveTab]      = useState<TabType>('pending')
+  const [searchQuery,    setSearchQuery]    = useState('')
+  const [statusFilter,   setStatusFilter]   = useState<BookingStatus | 'ALL'>('ALL')
+  const [actionError,    setActionError]    = useState<string | null>(null)
+  const [reviews,        setReviews]        = useState<RatingResponse[]>([])
+  const [reviewsLoading, setReviewsLoading] = useState(false)
+  const [fairnessMetrics, setFairnessMetrics] = useState<FairnessMetric[]>([])
 
   // Load all bookings
   useEffect(() => {
@@ -277,6 +565,23 @@ export default function ProviderDashboard() {
       .then(setBookings)
       .catch(console.error)
       .finally(() => setLoading(false))
+  }, [])
+
+  // Load reviews once provider ID is available
+  useEffect(() => {
+    if (!provider?.id) return
+    setReviewsLoading(true)
+    ratingApi.getProviderRatings(provider.id)
+      .then(setReviews)
+      .catch(console.error)
+      .finally(() => setReviewsLoading(false))
+  }, [provider?.id])
+
+  // Load fairness metrics once on mount
+  useEffect(() => {
+    analyticsApi.getFairnessMetrics()
+      .then(setFairnessMetrics)
+      .catch(console.error)
   }, [])
 
   // Stats
@@ -500,6 +805,24 @@ export default function ProviderDashboard() {
             )}
           </div>
         </div>
+
+        {/* ── Reviews panel ────────────────────────────────────────────── */}
+        {!loading && (
+          <ReviewsPanel
+            reviews={reviews}
+            overallRating={provider?.overallRating}
+            loading={reviewsLoading}
+          />
+        )}
+
+        {/* ── My Visibility ─────────────────────────────────────────────── */}
+        {!loading && (
+          <FairnessVisibilitySection
+            myMetric={fairnessMetrics.find(m => m.providerId === user?.id)}
+            allMetrics={fairnessMetrics}
+            myUserId={user?.id}
+          />
+        )}
 
         {/* Provider profile summary */}
         {!loading && provider && (

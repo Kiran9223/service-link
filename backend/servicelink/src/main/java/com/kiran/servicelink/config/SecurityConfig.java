@@ -98,7 +98,11 @@ public class SecurityConfig {
                                 "/api/services/category/**",
                                 "/api/services/provider/**",
                                 "/api/services/search",
-                                "/api/availability/provider/**"
+                                "/api/services/search/nearby",
+                                "/api/services/coverage-areas",
+                                "/api/availability/provider/**",
+                                "/api/ratings/provider/**",
+                                "/api/analytics/fairness"
                         ).permitAll()
 
                         // ── Admin-only ────────────────────────────────────────────

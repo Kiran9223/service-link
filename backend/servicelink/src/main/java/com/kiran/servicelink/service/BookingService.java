@@ -46,6 +46,7 @@ public class BookingService {
     private final ServiceProviderRepository providerRepository;
     private final UserRepository userRepository;
     private final BookingEventProducer eventProducer;
+    private final RatingRepository ratingRepository;
 
     // ========== CREATE BOOKING ==========
 
@@ -359,6 +360,11 @@ public class BookingService {
                 bookingId,
                 booking.getActualEndTime(),
                 booking.getActualDurationHours());
+
+        // Increment provider's completed booking counter
+        // (DB trigger increment_booking_counter checks lowercase 'completed' and is broken after V8)
+        providerRepository.incrementBookingCount(booking.getProvider().getId());
+        log.debug("Incremented totalBookingsCompleted for provider {}", booking.getProvider().getId());
 
         // Create audit entry
         BookingAudit audit = BookingAudit.forStatusChange(
@@ -786,7 +792,7 @@ public class BookingService {
                 .isToday(isToday)
                 .isFuture(isFuture)
                 .daysUntilBooking(daysUntil)
-                .hasReview(false)  // TODO: Query ratings table
+                .hasReview(ratingRepository.existsByBookingId(booking.getId()))
                 .build();
     }
 }

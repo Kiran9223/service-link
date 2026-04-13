@@ -345,6 +345,48 @@ public class NotificationService {
         }
     }
 
+    // ========== DIRECT NOTIFICATION (non-Kafka) ==========
+
+    /**
+     * Notify a provider that they received a new review.
+     * Called directly from RatingService — bypasses Kafka.
+     *
+     * @param recipientUserId Provider's user ID
+     * @param bookingId       Related booking ID
+     * @param customerName    Name of the customer who left the review
+     * @param stars           Star rating (1–5)
+     */
+    @Transactional
+    public void notifyReviewReceived(Integer recipientUserId, Long bookingId,
+                                     String customerName, int stars) {
+        try {
+            String subject = "New Review Received \u2b50";
+            String message = String.format("%s gave you a %d-star rating.", customerName, stars);
+
+            Notification notification = Notification.builder()
+                    .recipientUserId(recipientUserId)
+                    .bookingId(bookingId)
+                    .notificationType(NotificationType.REVIEW_RECEIVED)
+                    .subject(subject)
+                    .message(message)
+                    .channel(NotificationChannel.IN_APP)
+                    .status(NotificationStatus.SENT)
+                    .eventId(java.util.UUID.randomUUID())
+                    .isRead(false)
+                    .sentAt(LocalDateTime.now())
+                    .build();
+
+            Notification saved = notificationRepository.save(notification);
+            broadcastToUser(saved.getRecipientUserId(), saved);
+
+            log.info("Sent REVIEW_RECEIVED notification to provider user {} for booking {}",
+                    recipientUserId, bookingId);
+        } catch (Exception e) {
+            log.error("Failed to send review notification to user {}", recipientUserId, e);
+            // Don't propagate — notification is secondary to rating save
+        }
+    }
+
     // ========== REST API SUPPORT METHODS ==========
 
     /**

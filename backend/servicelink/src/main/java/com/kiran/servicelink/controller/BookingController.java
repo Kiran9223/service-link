@@ -112,7 +112,7 @@ public class BookingController {
     @GetMapping("/{id}")
     @PreAuthorize("isAuthenticated()")
     public ResponseEntity<BookingResponseDTO> getBookingById(
-            @PathVariable Long id,
+            @PathVariable("id") Long id,
             HttpServletRequest httpRequest) {
 
         log.info("GET /api/bookings/{} - Fetching booking", id);
@@ -288,7 +288,7 @@ public class BookingController {
     @GetMapping("/provider/bookings/date")
     @PreAuthorize("hasRole('SERVICE_PROVIDER')")
     public ResponseEntity<List<BookingResponseDTO>> getProviderBookingsForDate(
-            @RequestParam LocalDate date,
+            @RequestParam("date") LocalDate date,
             HttpServletRequest httpRequest) {
 
         log.info("GET /api/bookings/provider/bookings/date?date={}", date);
@@ -318,7 +318,7 @@ public class BookingController {
     @PutMapping("/{id}/confirm")
     @PreAuthorize("hasRole('SERVICE_PROVIDER')")
     public ResponseEntity<BookingResponseDTO> confirmBooking(
-            @PathVariable Long id,
+            @PathVariable("id") Long id,
             HttpServletRequest httpRequest) {
 
         log.info("PUT /api/bookings/{}/confirm - Confirming booking", id);
@@ -349,7 +349,7 @@ public class BookingController {
     @PutMapping("/{id}/start")
     @PreAuthorize("hasRole('SERVICE_PROVIDER')")
     public ResponseEntity<BookingResponseDTO> startService(
-            @PathVariable Long id,
+            @PathVariable("id") Long id,
             HttpServletRequest httpRequest) {
 
         log.info("PUT /api/bookings/{}/start - Starting service", id);
@@ -380,7 +380,7 @@ public class BookingController {
     @PutMapping("/{id}/complete")
     @PreAuthorize("hasRole('SERVICE_PROVIDER')")
     public ResponseEntity<BookingResponseDTO> completeService(
-            @PathVariable Long id,
+            @PathVariable("id") Long id,
             HttpServletRequest httpRequest) {
 
         log.info("PUT /api/bookings/{}/complete - Completing service", id);
@@ -415,7 +415,7 @@ public class BookingController {
     @PutMapping("/{id}/cancel")
     @PreAuthorize("isAuthenticated()")
     public ResponseEntity<BookingResponseDTO> cancelBooking(
-            @PathVariable Long id,
+            @PathVariable("id") Long id,
             @RequestBody Map<String, String> requestBody,
             HttpServletRequest httpRequest) {
 

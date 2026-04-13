@@ -13,12 +13,13 @@ import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 import org.springframework.web.context.request.WebRequest;
-import com.kiran.servicelink.exception.SlotAlreadyBookedException;
-import com.kiran.servicelink.exception.InvalidBookingStateException;
-import com.kiran.servicelink.exception.BookingNotFoundException;
 import com.kiran.servicelink.exception.BookingConflictException;
-import com.kiran.servicelink.exception.SlotNotAvailableException;
+import com.kiran.servicelink.exception.BookingNotFoundException;
 import com.kiran.servicelink.exception.BookingTimeConstraintException;
+import com.kiran.servicelink.exception.InvalidBookingStateException;
+import com.kiran.servicelink.exception.InvalidTokenException;
+import com.kiran.servicelink.exception.SlotAlreadyBookedException;
+import com.kiran.servicelink.exception.SlotNotAvailableException;
 
 import java.time.LocalDateTime;
 import java.util.ArrayList;
@@ -236,6 +237,28 @@ public class GlobalExceptionHandler {
         );
 
         return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(errorResponse);
+    }
+
+    /**
+     * Handle InvalidTokenException (invalid/expired password reset token)
+     * HTTP Status: 400 Bad Request
+     */
+    @ExceptionHandler(InvalidTokenException.class)
+    public ResponseEntity<ErrorResponse> handleInvalidToken(
+            InvalidTokenException ex,
+            HttpServletRequest request) {
+
+        logger.warn("Invalid token: {}", ex.getMessage());
+
+        ErrorResponse error = ErrorResponse.builder()
+                .timestamp(LocalDateTime.now())
+                .status(HttpStatus.BAD_REQUEST.value())
+                .error("Invalid Token")
+                .message(ex.getMessage())
+                .path(request.getRequestURI())
+                .build();
+
+        return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(error);
     }
 
     /**

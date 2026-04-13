@@ -1,18 +1,24 @@
 package com.kiran.servicelink.service;
 
 import com.kiran.servicelink.dto.mapper.DtoMapper;
+import com.kiran.servicelink.dto.request.ForgotPasswordRequest;
 import com.kiran.servicelink.dto.request.LoginRequest;
 import com.kiran.servicelink.dto.request.RegisterProviderRequest;
 import com.kiran.servicelink.dto.request.RegisterRequest;
+import com.kiran.servicelink.dto.request.ResetPasswordRequest;
 import com.kiran.servicelink.dto.response.AuthResponse;
+import com.kiran.servicelink.dto.response.PasswordResetResponse;
 import com.kiran.servicelink.dto.response.ServiceProviderDTO;
 import com.kiran.servicelink.dto.response.UserDTO;
+import com.kiran.servicelink.entity.PasswordResetToken;
 import com.kiran.servicelink.entity.Role;
 import com.kiran.servicelink.entity.ServiceProvider;
 import com.kiran.servicelink.entity.User;
 import com.kiran.servicelink.exception.EmailAlreadyExistsException;
 import com.kiran.servicelink.exception.InvalidCredentialsException;
+import com.kiran.servicelink.exception.InvalidTokenException;
 import com.kiran.servicelink.exception.ResourceNotFoundException;
+import com.kiran.servicelink.repository.PasswordResetTokenRepository;
 import com.kiran.servicelink.repository.ServiceProviderRepository;
 import com.kiran.servicelink.repository.UserRepository;
 import com.kiran.servicelink.security.jwt.JwtTokenProvider;
@@ -27,11 +33,14 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
+import java.util.UUID;
 
 @Service
 public class AuthService {
 
     private static final Logger logger = LoggerFactory.getLogger(AuthService.class);
+
+    private static final long RESET_TOKEN_EXPIRY_MINUTES = 30;
 
     private final UserRepository userRepository;
     private final ServiceProviderRepository serviceProviderRepository;
@@ -39,6 +48,7 @@ public class AuthService {
     private final JwtTokenProvider jwtTokenProvider;
     private final AuthenticationManager authenticationManager;
     private final DtoMapper dtoMapper;
+    private final PasswordResetTokenRepository passwordResetTokenRepository;
 
     public AuthService(
             UserRepository userRepository,
@@ -46,13 +56,15 @@ public class AuthService {
             PasswordEncoder passwordEncoder,
             JwtTokenProvider jwtTokenProvider,
             AuthenticationManager authenticationManager,
-            DtoMapper dtoMapper) {
+            DtoMapper dtoMapper,
+            PasswordResetTokenRepository passwordResetTokenRepository) {
         this.userRepository = userRepository;
         this.serviceProviderRepository = serviceProviderRepository;
         this.passwordEncoder = passwordEncoder;
         this.jwtTokenProvider = jwtTokenProvider;
         this.authenticationManager = authenticationManager;
         this.dtoMapper = dtoMapper;
+        this.passwordResetTokenRepository = passwordResetTokenRepository;
     }
 
     /**
@@ -251,6 +263,59 @@ public class AuthService {
                 .orElseThrow(() -> new ResourceNotFoundException("User", "email", email));
 
         return dtoMapper.toUserDTO(user);
+    }
+
+    /**
+     * Generate a password-reset token (thesis demo: token returned in response, no email sent)
+     */
+    @Transactional
+    public PasswordResetResponse forgotPassword(ForgotPasswordRequest request) {
+        logger.info("Password reset requested for email: {}", request.getEmail());
+
+        User user = userRepository.findByEmailIgnoreCase(request.getEmail())
+                .orElseThrow(() -> new ResourceNotFoundException("User", "email", request.getEmail()));
+
+        // Invalidate any existing tokens for this user
+        passwordResetTokenRepository.deleteByUserId(user.getId());
+
+        String rawToken = UUID.randomUUID().toString();
+        LocalDateTime expiresAt = LocalDateTime.now().plusMinutes(RESET_TOKEN_EXPIRY_MINUTES);
+
+        PasswordResetToken prt = PasswordResetToken.builder()
+                .user(user)
+                .token(rawToken)
+                .expiresAt(expiresAt)
+                .build();
+
+        passwordResetTokenRepository.save(prt);
+        logger.info("Password reset token created for user ID: {}", user.getId());
+
+        return PasswordResetResponse.builder()
+                .resetToken(rawToken)
+                .expiresIn(RESET_TOKEN_EXPIRY_MINUTES * 60)
+                .message("Password reset token generated. Use it within 30 minutes.")
+                .build();
+    }
+
+    /**
+     * Reset password using a valid token
+     */
+    @Transactional
+    public void resetPassword(ResetPasswordRequest request) {
+        PasswordResetToken prt = passwordResetTokenRepository.findByToken(request.getToken())
+                .orElseThrow(() -> new InvalidTokenException("Invalid or expired password reset token"));
+
+        if (prt.isExpired()) {
+            passwordResetTokenRepository.delete(prt);
+            throw new InvalidTokenException("Password reset token has expired");
+        }
+
+        User user = prt.getUser();
+        user.setPassword(passwordEncoder.encode(request.getNewPassword()));
+        userRepository.save(user);
+
+        passwordResetTokenRepository.delete(prt);
+        logger.info("Password reset successfully for user ID: {}", user.getId());
     }
 
     /**

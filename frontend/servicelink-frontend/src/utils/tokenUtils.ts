@@ -1,5 +1,5 @@
-import { TOKEN_KEY, USER_KEY } from '@/config/constants'
-import type { User } from '@/types/auth.types'
+import { TOKEN_KEY, USER_KEY, PROVIDER_KEY } from '@/config/constants'
+import type { User, ProviderInfo } from '@/types/auth.types'
 
 export const tokenUtils = {
   getToken(): string | null {
@@ -32,9 +32,28 @@ export const tokenUtils = {
     localStorage.removeItem(USER_KEY)
   },
 
+  getProvider(): ProviderInfo | null {
+    const stored = localStorage.getItem(PROVIDER_KEY)
+    if (!stored) return null
+    try {
+      return JSON.parse(stored) as ProviderInfo
+    } catch {
+      return null
+    }
+  },
+
+  setProvider(provider: ProviderInfo): void {
+    localStorage.setItem(PROVIDER_KEY, JSON.stringify(provider))
+  },
+
+  removeProvider(): void {
+    localStorage.removeItem(PROVIDER_KEY)
+  },
+
   clearAll(): void {
     localStorage.removeItem(TOKEN_KEY)
     localStorage.removeItem(USER_KEY)
+    localStorage.removeItem(PROVIDER_KEY)
   },
 
   // Decode JWT payload (no signature verification - that's the backend's job)

@@ -46,7 +46,7 @@ public class ServiceListingController {
     @PutMapping("/{id}")
     @PreAuthorize("hasRole('SERVICE_PROVIDER')")
     public ResponseEntity<ServiceListingResponseDTO> updateService(
-            @PathVariable Long id,
+            @PathVariable("id") Long id,
             @Valid @RequestBody ServiceListingRequestDTO request,
             HttpServletRequest httpRequest) {
 
@@ -61,7 +61,7 @@ public class ServiceListingController {
     @DeleteMapping("/{id}")
     @PreAuthorize("hasRole('SERVICE_PROVIDER')")
     public ResponseEntity<Void> deleteService(
-            @PathVariable Long id,
+            @PathVariable("id") Long id,
             HttpServletRequest httpRequest) {
 
         log.info("DELETE /api/services/{} - Deactivating service listing", id);
@@ -88,7 +88,7 @@ public class ServiceListingController {
     // ========== Public Operations ==========
 
     @GetMapping("/{id}")
-    public ResponseEntity<ServiceListingResponseDTO> getServiceById(@PathVariable Long id) {
+    public ResponseEntity<ServiceListingResponseDTO> getServiceById(@PathVariable("id") Long id) {
         log.info("GET /api/services/{} - Fetching service by ID", id);
 
         ServiceListingResponseDTO service = serviceListingService.getServiceById(id);
@@ -98,7 +98,7 @@ public class ServiceListingController {
 
     @GetMapping("/category/{categoryId}")
     public ResponseEntity<List<ServiceListingResponseDTO>> getServicesByCategory(
-            @PathVariable Long categoryId) {
+            @PathVariable("categoryId") Long categoryId) {
 
         log.info("GET /api/services/category/{} - Fetching services by category", categoryId);
 
@@ -110,7 +110,7 @@ public class ServiceListingController {
 
     @GetMapping("/provider/{providerId}")
     public ResponseEntity<List<ServiceListingResponseDTO>> getServicesByProvider(
-            @PathVariable Long providerId) {
+            @PathVariable("providerId") Long providerId) {
 
         log.info("GET /api/services/provider/{} - Fetching services by provider", providerId);
 
@@ -122,9 +122,9 @@ public class ServiceListingController {
 
     @GetMapping("/search")
     public ResponseEntity<List<ServiceListingResponseDTO>> searchServices(
-            @RequestParam Long categoryId,
-            @RequestParam(required = false) PricingType pricingType,
-            @RequestParam(required = false) BigDecimal maxPrice) {
+            @RequestParam("categoryId") Long categoryId,
+            @RequestParam(value = "pricingType", required = false) PricingType pricingType,
+            @RequestParam(value = "maxPrice", required = false) BigDecimal maxPrice) {
 
         log.info("GET /api/services/search - category: {}, pricingType: {}, maxPrice: {}",
                 categoryId, pricingType, maxPrice);
@@ -137,12 +137,12 @@ public class ServiceListingController {
 
     @GetMapping("/search/nearby")
     public ResponseEntity<List<ServiceListingResponseDTO>> searchServicesNearby(
-            @RequestParam Long categoryId,
-            @RequestParam BigDecimal userLat,
-            @RequestParam BigDecimal userLng,
-            @RequestParam(required = false) PricingType pricingType,
-            @RequestParam(required = false) BigDecimal maxPrice,
-            @RequestParam(required = false, defaultValue = "25") Double radiusMiles) {
+            @RequestParam("categoryId") Long categoryId,
+            @RequestParam("userLat") BigDecimal userLat,
+            @RequestParam("userLng") BigDecimal userLng,
+            @RequestParam(value = "pricingType", required = false) PricingType pricingType,
+            @RequestParam(value = "maxPrice", required = false) BigDecimal maxPrice,
+            @RequestParam(value = "radiusMiles", required = false, defaultValue = "25") Double radiusMiles) {
 
         log.info("GET /api/services/search/nearby - category: {}, lat: {}, lng: {}, radius: {}",
                 categoryId, userLat, userLng, radiusMiles);
@@ -151,6 +151,17 @@ public class ServiceListingController {
                 serviceListingService.searchServicesNearby(categoryId, userLat, userLng, radiusMiles, pricingType, maxPrice);
 
         return ResponseEntity.ok(services);
+    }
+
+    @GetMapping("/coverage-areas")
+    public ResponseEntity<List<String>> getCoverageAreas(
+            @RequestParam(value = "category", required = false) String category) {
+
+        log.info("GET /api/services/coverage-areas - category: {}", category);
+
+        List<String> cities = serviceListingService.getCoverageAreas(category);
+
+        return ResponseEntity.ok(cities);
     }
 
     // ========== Helper Methods ==========
