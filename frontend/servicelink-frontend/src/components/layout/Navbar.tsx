@@ -76,7 +76,12 @@ export default function Navbar() {
                 </button>
 
                 <div className="flex items-center space-x-3">
-                  <span className="text-sm text-gray-600">Hi, {user?.name?.split(' ')[0]}</span>
+                  <Link
+                    to="/profile"
+                    className="text-sm text-gray-600 hover:text-purple-600 font-medium transition"
+                  >
+                    Hi, {user?.name?.split(' ')[0]}
+                  </Link>
                   <button onClick={handleLogout} className="btn-outline py-2 text-sm">
                     Sign Out
                   </button>
@@ -124,6 +129,9 @@ export default function Navbar() {
               )}
               <Link to="/fairness" className="block py-2 text-gray-700 font-medium" onClick={() => setMobileOpen(false)}>
                 Fairness Metrics
+              </Link>
+              <Link to="/profile" className="block py-2 text-gray-700 font-medium" onClick={() => setMobileOpen(false)}>
+                My Profile
               </Link>
               <button onClick={handleLogout} className="w-full btn-outline text-sm">Sign Out</button>
             </>

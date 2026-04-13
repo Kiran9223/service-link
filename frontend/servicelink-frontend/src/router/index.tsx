@@ -20,6 +20,7 @@ const NotificationsPage = lazy(() => import('@/features/notifications/Notificati
 const ForgotPasswordPage = lazy(() => import('@/features/auth/ForgotPasswordPage'))
 const ResetPasswordPage  = lazy(() => import('@/features/auth/ResetPasswordPage'))
 const FairnessDashboard  = lazy(() => import('@/features/fairness/FairnessDashboard'))
+const ProfilePage        = lazy(() => import('@/features/profile/ProfilePage'))
 
 const Wrap = ({ children }: { children: React.ReactNode }) => (
   <Suspense fallback={<LoadingSpinner fullPage />}>{children}</Suspense>
@@ -47,6 +48,7 @@ export const router = createBrowserRouter([
           { path: 'bookings/:id',    element: <Wrap><BookingDetailPage /></Wrap> },
           { path: 'book/:serviceId', element: <Wrap><BookingPage /></Wrap> },
           { path: 'fairness',        element: <Wrap><FairnessDashboard /></Wrap> },
+          { path: 'profile',         element: <Wrap><ProfilePage /></Wrap> },
         ],
       },
 
